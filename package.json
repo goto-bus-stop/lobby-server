@@ -1,0 +1,17 @@
+{
+  "private": true,
+  "name": "aoc-lobby-server",
+  "version": "0.0.1-dev",
+  "dependencies": {
+    "express": "4.x",
+    "socket.io": "",
+    "mysql": "2.x",
+    "when": "",
+    "lodash": "",
+    "cookie-parser": "",
+    "body-parser": "",
+    "express-session" :"",
+    "csurf": "",
+    "morgan": ""
+  }
+}
