@@ -1,0 +1,8 @@
+{
+  "db": { "host": "localhost",
+          "user": "lobbyserver",
+          "password": "",
+          "database": "lobbyserver" },
+  "cookie_secret": "our_top_secret_key",
+  "base_url": "/"
+}

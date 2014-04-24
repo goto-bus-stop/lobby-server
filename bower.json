@@ -1,0 +1,9 @@
+{
+  "name": "aoc-lobby-server",
+  "private": true,
+  "dependencies": {
+    "jquery": "1.x",
+    "ember": "~1.5",
+    "handlebars": "~1.3"
+  }
+}

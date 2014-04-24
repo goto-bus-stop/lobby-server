@@ -1,0 +1,49 @@
+<h1>Open Rooms</h1>
+<ul id="games" class="list-unstyled">
+  {{#each games}}
+    {{view App.GameRoomView tagName="li"}}
+  {{/each}}
+</ul>
+<button class="btn btn-default" type="button" data-toggle="modal" data-target="#create-game-modal">Create Game</button>
+<div class="modal" id="create-game-modal">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <div class="modal-header">
+        <button type="button" class="close" data-dismiss="modal" aria-hidden="true">&times;</button>
+        <h4 class="modal-title">Create Game</h4>
+      </div>
+      <div class="modal-body">
+        <form id="create-game-form" class="form-horizontal" action="/web/games" method="post">
+          <div class="form-group">
+            <label for="create-game-title" class="col-sm-3 control-label">Room Name</label>
+            <div class="col-sm-9">
+              {{view App.TextField value=gameData.title}}
+            </div>
+          </div>
+          <div class="form-group">
+            <label for="create-game-descr" class="col-sm-3 control-label">Room Description</label>
+            <div class="col-sm-9">
+              {{view App.TextArea value=gameData.descr}}
+            </div>
+          </div>
+          <div class="form-group">
+            <label for="create-game-maxp" class="col-sm-3 control-label">Max Players</label>
+            <div class="col-sm-9">
+              {{view App.NumberField min=1 max=8 value=gameData.maxPlayers}}
+            </div>
+          </div>
+          <div class="form-group">
+            <label for="create-game-ladder" class="col-sm-3 control-label">Ladder</label>
+            <div class="col-sm-9">
+              {{view App.Select value=gameData.ladder content=App.ladders optionValuePath="content.id" optionLabelPath="content.name"}}
+            </div>
+          </div>
+        </form>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-default" data-dismiss="modal">Cancel</button>
+        <button {{action "createGame"}} {{bind-attr disabled="sendingRequest"}} id="create-game-create" form="create-game-form" type="button" class="btn btn-primary">Create</button>
+      </div>
+    </div>
+  </div>
+</div>
