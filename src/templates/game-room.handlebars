@@ -1,6 +1,7 @@
+<button class="btn btn-primary btn-large pull-right" type="button" {{action "leave"}}>Leave</button>
 <h1>{{title}}</h1>
 <div class="row">
-  <div class="col-lg-3 players">
+  <div class="col-lg-3 players" style="background-color:#eef">
     <ul class="list-unstyled">
       {{#each players}}
         {{view App.UsernameView tagName="li"}}
@@ -8,5 +9,21 @@
     </ul>
   </div>
   <div class="col-lg-9 chat">
+    {{#each chatMessages}}
+      <div class="message">
+        {{format time "HH:mm:ss"}}
+        {{#if isSystemMessage}}
+          [ <span class="system">{{msg}}</span> ]
+        {{else}}
+          {{view App.UsernameView context=user tagName="strong"}} {{msg}}
+        {{/if}}
+      </div>
+    {{/each}}
+    <div class="input-group">
+      {{view App.TextField id="game-room-chat-message" context=this value=message}}
+      <span class="input-group-btn">
+        <button class="btn btn-default" type="button" {{action "sendChat"}}>Send</button>
+      </span>
+    </div>
   </div>
 </div>

@@ -4,7 +4,13 @@ module.exports = function (app) {
 
   app.get('/', function (req, res) {
     if (req.session.uid) {
-      res.render('@layout', { content: '{{outlet}}', uid: req.session.uid });
+      api.getLadders().then(function (ladders) {
+        res.render('@layout', {
+          content: '{{outlet}}',
+          uid: req.session.uid,
+          ladders: ladders
+        });
+      });
     }
     else {
       api.getUsers().then(function (users) {

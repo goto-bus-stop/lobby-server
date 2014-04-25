@@ -53,6 +53,45 @@ function getUsers() {
     _conn.release();
   });
 }
+function getLadders() {
+  var _conn;
+  return sql.getConnection().then(function (conn) { _conn = conn; })
+  
+  .then(function () {
+    return sql.query(_conn, 'SELECT * FROM ladders');
+  })
+  
+  .catch(function (e) {
+    console.log(e.stack);
+  })
+  .finally(function () {
+    _conn.release();
+  });
+}
+function getGame(id) {
+  var _conn;
+  return sql.getConnection().then(function (conn) { _conn = conn; })
+  
+  .then(function () {
+    var s = sequence([
+      function () { return sql.query(_conn, 'SELECT * FROM rooms WHERE id = ?', [ id ]) },
+      function () { return sql.query(_conn, 'SELECT id, username, country, status, in_room_id FROM users WHERE in_room_id IS ?', [ id ]) }
+    ]);
+    return s;
+  })
+  .then(function (args) {
+    var room = args[0][0], players = args[1];
+    room.players = players;
+    return room;
+  })
+  
+  .catch(function (e) {
+    console.log(e.stack);
+  })
+  .finally(function () {
+    _conn.release();
+  });
+}
 function getGames() {
   var _conn;
   return sql.getConnection().then(function (conn) { _conn = conn; })
@@ -175,7 +214,6 @@ function cleanupRooms(rid) {
   });
 }
 function joinRoom(uid, rid) {
-  console.log(uid, 'is joining', rid)
   var _conn;
   return sql.getConnection().then(function (conn) { _conn = conn; })
   
@@ -191,11 +229,8 @@ function joinRoom(uid, rid) {
     return sql.query(_conn, 'UPDATE users SET in_room_id = ? WHERE id = ?', [ rid, uid ]);
   })
   .then(function () {
-    return getUser(uid);
-  })
-  .then(function (user) {
     process.nextTick(cleanupRooms);
-    PubSub.publish('room-joined', user, rid);
+    PubSub.publish('room-joined', uid, rid);
     return true;
   })
   .catch(function (e) {
@@ -208,7 +243,6 @@ function joinRoom(uid, rid) {
   });
 }
 function leaveRoom(uid, rid) {
-  console.log(uid, 'is leaving', rid);
   var _conn;
   return sql.getConnection().then(function (conn) { _conn = conn; })
   
@@ -237,6 +271,8 @@ function leaveRoom(uid, rid) {
 
 exports.getUser = getUser;
 exports.getUsers = getUsers;
+exports.getLadders = getLadders;
+exports.getGame = getGame;
 exports.getGames = getGames;
 exports.createGame = createGame;
 exports.startGame = startGame;

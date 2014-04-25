@@ -8,13 +8,13 @@ var express = require('express'),
     bodyParser = require('body-parser'),
     session = require('express-session'),
     csurf = require('csurf'),
-    logger = require('morgan');
+    logger = require('morgan'),
+    lessMiddleware = require('less-middleware');
 
 // Library stuff
 var when = require('when'),
     sequence = require('when/sequence');
 var _ = require('lodash');
-var express = require('express');
 var socketio = require('socket.io');
 
 var sql = require('./sql');
@@ -34,6 +34,7 @@ app.sessionStore = new session.MemoryStore();
 app.use(cookieParser());
 app.use(session({ secret: config.cookie_secret, key: 'sid', store: app.sessionStore }));
 app.use(bodyParser());
+app.use(lessMiddleware(__dirname + '/public'));
 app.use(express.static(__dirname + '/public'));
 
 Handlebars.registerHelper('template', function (n) {

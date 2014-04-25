@@ -1,7 +1,7 @@
 <h1>Open Rooms</h1>
 <ul id="games" class="list-unstyled">
   {{#each games}}
-    {{view App.GameRoomView tagName="li"}}
+    {{view App.GameRoomSummary tagName="li"}}
   {{/each}}
 </ul>
 <button class="btn btn-default" type="button" data-toggle="modal" data-target="#create-game-modal">Create Game</button>
