@@ -13,19 +13,25 @@ module.exports = function (app) {
       });
     }
     else {
-      api.getUsers().then(function (users) {
-        var html = '<!DOCTYPE html><html><body><form action="" method="post"><select name="uid">';
-        users.forEach(function (u) {
-          html += '<option value="' + u.id + '">' + u.username + '</option>';
-        });
-        html += '</select><input type="submit"></form></body></html>';
-        res.send(html);
-      })
+      var html = '<!DOCTYPE html><html><body><form action="" method="post"><input name="username" placeholder="username">';
+      html += '<input type="password" name="password" placeholder="Password (not used)"><input type="submit"></form></body></html>';
+      res.send(html);
     }
   });
   app.post('/', function (req, res) {
-    req.session.uid = req.body.uid;
-    res.redirect('/');
+    api.searchUser({ username: req.body.username.trim() })
+      .then(function (users) {
+        if (users.length > 0) {
+          req.session.uid = users[0].id;
+          res.redirect('/');
+        }
+        else {
+          throw new Error();
+        }
+      })
+      .catch(function () {
+        res.send('That user no exists!!!1!!');
+      });
   });
   
 };

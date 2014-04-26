@@ -1,16 +1,15 @@
-var api = require('../api');
+var api = require('../api'),
+    sequence = require('when/sequence');
 
 module.exports = function (app) {
 
-  var uid = 1;
-  
   app.get('/games', function (req, res) {
     api.getGames().then(function (rooms) {
       res.json(rooms);
     });
   });
 
-  app.get('/games/:game_id/start', function (req, res) {
+  app.post('/games/:game_id/start', function (req, res) {
     api.startGame(req.params.game_id).then(function (result) {
       res.json(result);
     });
@@ -22,13 +21,13 @@ module.exports = function (app) {
       descr: req.body.desc,
       maxPlayers: req.body.maxPlayers,
       ladder: req.body.ladder,
-      host: uid,
+      host: req.session.uid,
       ip: req.ip
     };
     api.createGame(options)
       .then(function (result) {
         if (result) {
-          return api.joinRoom(uid, result);
+          return api.joinRoom(req.session.uid, result).then(function () { return result; });
         }
         else {
           return false;

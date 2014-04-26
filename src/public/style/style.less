@@ -1,8 +1,43 @@
-.chat {
-  .message {
-    .system {
-      font-style: italic;
-      color: #777;
+.game-room {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: 0; right: 0;
+  
+  .players {
+    position: absolute;
+    top: 70px;
+    left: 0;
+    bottom: 0;
+  }
+  
+  .chat {
+    position: absolute;
+    right: 0;
+    top: 70px;
+    bottom: 0;
+    
+    .message {
+      .system {
+        font-style: italic;
+        color: #777;
+      }
     }
+    
+    .input-group {
+      position: absolute;
+      bottom: 10px;
+    }
+  }
+}
+
+.game-room-summary {
+  .panel-heading {
+//    font-size: 12pt;
+//    font-weight: bold;
+  }
+  
+  .list-inline {
+    margin-bottom: 0;
   }
 }

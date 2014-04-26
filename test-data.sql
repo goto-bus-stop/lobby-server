@@ -19,10 +19,6 @@ INSERT INTO `rooms` (`id`, `title`, `descr`, `max_players`, `ladder_id`, `host_i
 (17,	'Canada Wins NC!',	'',	8,	2,	8,	'waiting',	NULL),
 (20,	'Zak',	NULL,	8,	1,	1,	NULL,	'81.23.56.92');
 
-INSERT INTO `sessions` (`id`, `seskey`, `room_id`, `user_id`) VALUES
-(9,	'1458e02cbb',	1,	1),
-(10,	'1458e02cbb',	1,	2);
-
 INSERT INTO `users` (`id`, `username`, `password`, `country`, `status`, `in_room_id`) VALUES
 (1,	'Anna',	'a94a8fe5ccb19ba61c4c0873d391e987982fbbd3',	'kr',	'avail',	20),
 (2,	'Zak',	'a94a8fe5ccb19ba61c4c0873d391e987982fbbd3',	'gb',	'avail',	NULL),

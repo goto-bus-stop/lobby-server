@@ -14,9 +14,7 @@
       var __ladders = {{json ladders}};
     </script>
     <script type="text/x-handlebars">
-      <div class="container">
-        {{{content}}}
-      </div>
+      {{{template "application"}}}
     </script>
     <script type="text/x-handlebars" id="index">
       {{{template "index"}}}
@@ -24,11 +22,17 @@
     <script type="text/x-handlebars" id="username">
       {{{template "username"}}}
     </script>
+    <script type="text/x-handlebars" id="user-item">
+      {{{template "user-item"}}}
+    </script>
     <script type="text/x-handlebars" id="game-room">
       {{{template "game-room"}}}
     </script>
     <script type="text/x-handlebars" id="game-room-summary">
       {{{template "game-room-summary"}}}
+    </script>
+    <script type="text/x-handlebars" id="chat-message">
+      {{{template "chat-message"}}}
     </script>
     <script src="{{config.base_url}}js/lib/jquery/dist/jquery.js"></script>
     <script src="{{config.base_url}}js/lib/handlebars/handlebars.js"></script>

@@ -1,3 +1,5 @@
+var debug = require('debug')('pubsub');
+
 /**
  * Super-simple event system!
  * @constructor
@@ -31,9 +33,9 @@ function PubSub() {
    */
   p.once = function (evt, fn) {
     var self = this;
-    return self.on(evt, function onceFn() {
+    return self.subscribe(evt, function onceFn() {
       fn.apply(this, arguments);
-      self.off(evt, onceFn);
+      self.unsubscribe(evt, onceFn);
     });
   };
 
@@ -57,6 +59,7 @@ function PubSub() {
    * @return {Evts}
    */
   p.publish = function (evt, var_args) {
+    debug('publishing ', evt);
     var self = this,
       e = self.$events && self.$events[evt];
     if (e) {

@@ -63,6 +63,6 @@ app.io = socketio.listen(server);
 
 require('./socket-api')(app);
 
-server.listen(3020, function () {
+server.listen(config.port, function () {
   console.log('Listening on port %d', server.address().port);
 });

@@ -1,11 +1,13 @@
 <h1>Open Rooms</h1>
-<ul id="games" class="list-unstyled">
-  {{#each games}}
-    {{view App.GameRoomSummary tagName="li"}}
-  {{/each}}
-</ul>
-<button class="btn btn-default" type="button" data-toggle="modal" data-target="#create-game-modal">Create Game</button>
-<div class="modal" id="create-game-modal">
+<div class="row">
+  <div class="col-lg-8">
+    <ul class="list-unstyled">
+      {{#each games}}
+        {{view App.GameRoomSummary tagName="li"}}
+      {{/each}}
+    </ul>
+    <button class="btn btn-default" type="button" data-toggle="modal" data-target="#create-game-modal">Create Game</button>
+    <div class="modal" id="create-game-modal">
   <div class="modal-dialog">
     <div class="modal-content">
       <div class="modal-header">
@@ -43,6 +45,25 @@
       <div class="modal-footer">
         <button type="button" class="btn btn-default" data-dismiss="modal">Cancel</button>
         <button {{action "createGame"}} {{bind-attr disabled="sendingRequest"}} id="create-game-create" form="create-game-form" type="button" class="btn btn-primary">Create</button>
+      </div>
+    </div>
+  </div>
+</div>
+  </div>
+  <div class="col-lg-4">
+    <div class="panel panel-default">
+      <div class="panel-heading">Online Players</div>
+      <div class="panel-body">
+        <ul class="list-unstyled">
+          {{#each App.onlinePlayers}}
+            {{view App.UserItemView tagName="li"}}
+          {{/each}}
+        </ul>
+      </div>
+    </div>
+    <div class="panel panel-default">
+      <div class="panel-heading">Chat</div>
+      <div class="panel-body">
       </div>
     </div>
   </div>

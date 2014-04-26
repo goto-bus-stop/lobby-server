@@ -2,25 +2,33 @@
 <h1>{{title}}</h1>
 <div class="row">
   <div class="col-lg-3 players" style="background-color:#eef">
-    <ul class="list-unstyled">
-      {{#each players}}
-        {{view App.UsernameView tagName="li"}}
-      {{/each}}
-    </ul>
+    <dl>
+      <dt>Description</dt>
+      <dd>{{desc}}</dd>
+      <dt>Host</dt>
+      {{view App.UsernameView context=host tagName="dd"}}
+      <dt>Players ({{players.length}} / {{max_players}})</dt>
+      <dd>
+        <ul class="list-unstyled">
+          {{#each otherPlayers}}
+            {{view App.UserItemView tagName="li"}}
+          {{/each}}
+        </ul>
+      </dd>
+      <dt>Launch</dt>
+      <dd>
+        <button class="btn btn-primary" type="button" {{bind-attr disabled=unlaunchable}} {{action "launch"}}>Launch</button>
+      </dd>
+    </dl>
   </div>
   <div class="col-lg-9 chat">
-    {{#each chatMessages}}
-      <div class="message">
-        {{format time "HH:mm:ss"}}
-        {{#if isSystemMessage}}
-          [ <span class="system">{{msg}}</span> ]
-        {{else}}
-          {{view App.UsernameView context=user tagName="strong"}} {{msg}}
-        {{/if}}
-      </div>
-    {{/each}}
+    <div class="chat-messages">
+      {{#each chatMessages}}
+        {{view App.ChatMessageView}}
+      {{/each}}
+    </div>
     <div class="input-group">
-      {{view App.TextField id="game-room-chat-message" context=this value=message}}
+      {{view App.TextField id="game-room-chat-message" autofocus=true context=this value=message}}
       <span class="input-group-btn">
         <button class="btn btn-default" type="button" {{action "sendChat"}}>Send</button>
       </span>

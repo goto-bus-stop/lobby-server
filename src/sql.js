@@ -1,7 +1,8 @@
 var mysql = require('mysql'),
     when = require('when');
 
-var config = require('./config');
+var config = require('./config'),
+    debug = require('debug')('mysql');
 
 // MySQL & helpers
 var pool = mysql.createPool({
@@ -11,21 +12,21 @@ var pool = mysql.createPool({
   database: config.db.database
 });
 function query(conn, sql) {
-  var args = [].slice.call(arguments, 1),
-      timer = 'Query `' + sql + '`';
+  var args = [].slice.call(arguments, 1);
   return when.promise(function (resolve, reject, notify) {
     args.push(function (err, rows) {
-      console.timeEnd(timer);
+      debug('finished query', sql);
       if (err) reject(err);
       else resolve(rows);
     });
-    console.time(timer);
+    debug('starting query', sql);
     conn.query.apply(conn, args);
   });
 }
 function getConnection() {
   return when.promise(function (resolve, reject, notify) {
     pool.getConnection(function (err, conn) {
+      debug('got connection');
       if (err) reject(err);
       else resolve(conn);
     });

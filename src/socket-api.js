@@ -7,7 +7,9 @@ var PubSub = require('./PubSub'),
 module.exports = function (app) {
   var io = app.io;
   
-  var passthruEvents = [ 'game-created', 'game-starting', 'game-destroyed', 'room-joined', 'room-left' ];
+  var passthruEvents = [ 'game-created', 'game-starting',
+                         'user-joined', 'user-left',
+                         'room-destroyed', 'room-joined', 'room-left' ];
   passthruEvents.forEach(function (event) {
     PubSub.subscribe(event, function () {
       var args = [].slice.call(arguments, 0);
@@ -35,6 +37,7 @@ module.exports = function (app) {
     });
   });
   
+  var disconnections = {};
   io.sockets.on('connection', function (sock) {
     // Ugh. This looks up the HTTP request of the socket connection
     // so we can access the cookies. Obviously socket.io doesn't actually
@@ -67,6 +70,14 @@ module.exports = function (app) {
       // in an on('ready') event :/
       sock.emit('ready');
       
+      if (session && disconnections[session.uid]) {
+        clearTimeout(disconnections[session.uid]);
+        delete disconnections[session.uid];
+      }
+      else {
+        api.online(session.uid);
+      }
+      
       // api calls
       sock.on('api:me', function (cb) {
         api.getUser(session.uid).then(function (me) {
@@ -88,7 +99,15 @@ module.exports = function (app) {
           cb(games);
         });
       });
+      sock.on('api:online', function (cb) {
+        api.getOnlineUsers().then(function (users) {
+          cb(users);
+        });
+      });
       sock.on('api:join-room', function (rid, cb) {
+        if (session.rid) {
+          sock.leave(session.rid);
+        }
         api.joinRoom(session.uid, rid)
           .then(function (res) {
             sock.join(rid);
@@ -97,6 +116,7 @@ module.exports = function (app) {
           });
       });
       sock.on('api:leave-room', function (cb) {
+        sock.leave(session.rid);
         api.leaveRoom(session.uid).then(cb);
       });
       
@@ -119,7 +139,11 @@ module.exports = function (app) {
       
       // cleanup :D
       sock.on('disconnect', function () {
-        api.leaveRoom(session.uid);
+        disconnections[session.uid] = setTimeout(function () {
+          api.offline(session.uid);
+          api.leaveRoom(session.uid);
+          PubSub.publish('user-left', session.uid);
+        }, 5000);
       });
     }
   });

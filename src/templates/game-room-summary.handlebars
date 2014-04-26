@@ -1,11 +1,14 @@
-<div class="media">
+<div class="media hide">
   <div class="pull-left">
     <button class="media-object btn btn-primary" {{bind-attr disabled=full}} {{action "join" id}}>
       {{#if full}} Full {{else}} Join {{/if}}
     </button>
   </div>
   <div class="media-body">
-    <div class="game-title">{{title}}</div>
+    <div class="row">
+      <div class="game-title col-lg-6">{{title}}</div>
+      <div class="game-ladder col-lg-3">{{ladder_name}}</div>
+    </div>
     <div class="game-descr">
       <ul class="list-inline">
         <li><strong>Players:</strong></li>
@@ -13,6 +16,40 @@
           {{view App.UsernameView tagName="li"}}
         {{/each}}
       </ul>
+    </div>
+  </div>
+</div>
+<div class="panel panel-default">
+  <div class="panel-heading">
+    <div class="row">
+      <div class="col-lg-5">
+        {{title}}
+      </div>
+      <div class="col-lg-2">
+        {{players.length}}/{{max_players}}
+      </div>
+      <div class="col-lg-3">
+        {{ladder_name}}
+      </div>
+      <div class="col-lg-2">
+        RM
+      </div>
+    </div>
+  </div>
+  <div class="panel-body">
+    <div class="row">
+      <div class="col-lg-9">
+        <ul class="list-inline">
+          {{#each players}}
+            {{view App.UsernameView tagName="li"}}
+          {{/each}}
+        </ul>
+      </div>
+      <div class="col-lg-3">
+        <button class="btn btn-primary pull-right" {{bind-attr disabled=full}} {{action "join" id}}>
+          {{#if full}} Full {{else}} Join {{/if}}
+        </button>
+      </div>
     </div>
   </div>
 </div>

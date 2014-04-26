@@ -1,0 +1,8 @@
+<div class="message">
+  {{format time "HH:mm:ss"}}
+  {{#if isSystemMessage}}
+    [ <span class="system">{{msg}}</span> ]
+  {{else}}
+    {{view App.UsernameView context=user tagName="strong"}} {{msg}}
+  {{/if}}
+</div>
