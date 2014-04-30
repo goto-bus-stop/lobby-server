@@ -2,11 +2,14 @@
 <h1>{{title}}</h1>
 <div class="row">
   <div class="col-lg-3 players" style="background-color:#eef">
+    {{#if hosting}}
+      <button class="btn btn-primary" type="button" {{action "edit"}}>Room Settings</button>
+    {{/if}}
     <dl>
       <dt>Description</dt>
       <dd>{{desc}}</dd>
       <dt>Host</dt>
-      {{view App.UsernameView context=host tagName="dd"}}
+      {{view App.UserItemView context=host tagName="dd"}}
       <dt>Players ({{players.length}} / {{max_players}})</dt>
       <dd>
         <ul class="list-unstyled">
@@ -28,7 +31,7 @@
       {{/each}}
     </div>
     <div class="input-group">
-      {{view App.TextField id="game-room-chat-message" autofocus=true context=this value=message}}
+      {{view App.TextField autofocus=true context=this value=chatMessage}}
       <span class="input-group-btn">
         <button class="btn btn-default" type="button" {{action "sendChat"}}>Send</button>
       </span>

@@ -1,4 +1,5 @@
-var api = require('../api');
+var api = require('../api'),
+    pp = require('passport');
 
 module.exports = function (app) {
 
@@ -14,11 +15,11 @@ module.exports = function (app) {
     }
     else {
       var html = '<!DOCTYPE html><html><body><form action="" method="post"><input name="username" placeholder="username">';
-      html += '<input type="password" name="password" placeholder="Password (not used)"><input type="submit"></form></body></html>';
+      html += '<input type="password" name="password" placeholder="Password (it\'s test)"><input type="submit"></form></body></html>';
       res.send(html);
     }
   });
-  app.post('/', function (req, res) {
+  app.post('/', pp.authenticate('local'), function (req, res) {
     api.searchUser({ username: req.body.username.trim() })
       .then(function (users) {
         if (users.length > 0) {

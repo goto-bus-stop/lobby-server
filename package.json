@@ -7,17 +7,23 @@
     "cookie-parser": "",
     "cookie-signature": "",
     "body-parser": "",
-    "express-session" :"",
+    "express-session": "",
+    "connect-redis": "",
     "csurf": "",
     "morgan": "",
     "less-middleware": "",
-
     "socket.io": "",
-    
     "mysql": "2.x",
     "when": "",
     "lodash": "",
     "handlebars": "~1.3",
-    "debug": ""
+    "debug": "",
+    "passport": "~0.2",
+    "passport-local": "1.x",
+    "bcrypt": ""
+  },
+  "devDependencies": {
+    "gulp": "^3.6.2",
+    "gulp-concat": "^2.2.0"
   }
 }

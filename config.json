@@ -1,9 +1,17 @@
 {
-  "db": { "host": "localhost",
-          "user": "lobbyserver",
-          "password": "",
-          "database": "lobbyserver" },
+  "db": {
+    "host": "localhost",
+    "user": "lobbyserver",
+    "password": "",
+    "database": "lobbyserver"
+  },
   "cookie_secret": "our_top_secret_key",
   "base_url": "/",
-  "port": 3020
+  "port": 3020,
+  "redis": {
+    "host": "127.0.0.1",
+    "port": 6379,
+    "db": 0
+  },
+  "env": "development"
 }

@@ -6,6 +6,20 @@ var sql = require('./sql');
 var PubSub = require('./PubSub');
 var debug = require('debug')('api');
 
+// '#' is placeholder for table prefix
+var userKeys = [ '#id', '#username', '#country', '#status', '#in_room_id' ],
+    roomKeys = [ '#id', '#title', '#descr', '#max_players', '#ladder_id', '#host_id', '#status', '(LENGTH(#password) > 0) AS locked' ];
+
+function k(keys, prefix) {
+  if (prefix) {
+    prefix += '.';
+  }
+  else {
+    prefix = '';
+  }
+  return keys.map(function (key) { return key.replace(/#/, prefix); }).join(', ');
+}
+
 function generateSeskey() {
   var l = 10,
       chars = '1234567890abcdef',
@@ -24,7 +38,7 @@ function generateSeskey() {
 function withRatings(user) {
   if (Array.isArray(user)) {
     var users = _.indexBy(user, 'id');
-    return getRatings(Object.keys(user)).then(function (ratings) {
+    return getRatings(Object.keys(users)).then(function (ratings) {
       ratings.forEach(function (rating) {
         if (!users[rating.user_id].ratings) {
           users[rating.user_id].ratings = {};
@@ -48,7 +62,7 @@ function getUser(id) {
   return sql.getConnection().then(function (conn) { _conn = conn; })
   
   .then(function () {
-    return sql.query(_conn, 'SELECT id, username, country, status, in_room_id FROM users WHERE id = ?', [ id ]);
+    return sql.query(_conn, 'SELECT ' + k(userKeys) + ' FROM users WHERE id = ?', [ id ]);
   })
   .then(function (rows) {
     return withRatings(rows[0]);
@@ -61,12 +75,12 @@ function getUser(id) {
     _conn.release();
   });
 }
-function searchUser(data) {
+function searchUser(data, all) {
   var _conn;
   return sql.getConnection().then(function (conn) { _conn = conn; })
   
   .then(function () {
-    return sql.query(_conn, 'SELECT id, username, country, status, in_room_id FROM users WHERE ?', [ data ]);
+    return sql.query(_conn, 'SELECT ' + (all ? '*' : k(userKeys)) + ' FROM users WHERE ?', [ data ]);
   })
   .then(function (rows) {
     return withRatings(rows);
@@ -84,7 +98,7 @@ function getUsers() {
   return sql.getConnection().then(function (conn) { _conn = conn; })
   
   .then(function () {
-    return sql.query(_conn, 'SELECT id, username, country, status, in_room_id FROM users')
+    return sql.query(_conn, 'SELECT ' + k(userKeys) + ' FROM users')
   })
   
   .catch(function (e) {
@@ -115,8 +129,8 @@ function getGame(id) {
   
   .then(function () {
     var s = sequence([
-      function () { return sql.query(_conn, 'SELECT r.*, l.name AS ladder_name FROM rooms r, ladders l WHERE r.id = ? AND l.id = r.ladder_id', [ id ]) },
-      function () { return sql.query(_conn, 'SELECT id, username, country, status, in_room_id FROM users WHERE in_room_id = ?', [ id ]) }
+      function () { return sql.query(_conn, 'SELECT ' + k(roomKeys, 'r') + ', l.name AS ladder_name FROM rooms r, ladders l WHERE r.id = ? AND l.id = r.ladder_id', [ id ]) },
+      function () { return sql.query(_conn, 'SELECT ' + k(userKeys) + ' FROM users WHERE in_room_id = ?', [ id ]) }
     ]);
     return s;
   })
@@ -139,8 +153,8 @@ function getGames() {
   
   .then(function () {
     var s = sequence([
-      function () { return sql.query(_conn, 'SELECT r.*, l.name AS ladder_name FROM rooms r, ladders l WHERE l.id = r.ladder_id') },
-      function () { return sql.query(_conn, 'SELECT id, username, country, status, in_room_id FROM users WHERE in_room_id IS NOT NULL') }
+      function () { return sql.query(_conn, 'SELECT ' + k(roomKeys, 'r') + ', l.name AS ladder_name FROM rooms r, ladders l WHERE l.id = r.ladder_id') },
+      function () { return sql.query(_conn, 'SELECT ' + k(userKeys) + ' FROM users WHERE in_room_id IS NOT NULL') }
     ]);
     return s;
   })
@@ -166,8 +180,8 @@ function createGame(options) {
   
   .then(function () {
     return sql.query(_conn,
-      'INSERT INTO rooms (title, descr, max_players, ladder_id, host_id, ip) ' +
-      'VALUES (?, ?, ?, ?, ?, ?)', [ options.title, options.descr, options.maxPlayers, options.ladder, options.host, options.ip ]);
+      'INSERT INTO rooms (title, descr, password, max_players, ladder_id, host_id, ip) ' +
+      'VALUES (?, ?, ?, ?, ?, ?, ?)', [ options.title, options.descr, options.password, options.maxPlayers, options.ladder, options.host, options.ip ]);
   })
   .then(function (q) {
     PubSub.publish('game-created', _.merge({ id: q.insertId }, options));
@@ -375,12 +389,31 @@ function getOnlineUsers() {
   return sql.getConnection().then(function (conn) { _conn = conn; })
   
   .then(function () {
-    return sql.query(_conn, 'SELECT u.id, u.username, u.country, u.status, u.in_room_id FROM users u, online o WHERE u.id = o.user_id');
+    return sql.query(_conn, 'SELECT ' + k(userKeys, 'u') + ' FROM users u, online o WHERE u.id = o.user_id');
   })
   .then(function (rows) {
     return withRatings(rows);
   })
   
+  .catch(function (e) {
+    debug(e.message);
+  })
+  .finally(function () {
+    _conn.release();
+  });
+}
+
+function getMods() {
+  var _conn;
+  return sql.getConnection().then(function (conn) { _conn = conn; })
+  
+  .then(function () {
+    return sql.query(_conn, 'SELECT * FROM mods');
+  })
+  
+  .catch(function (e) {
+    debug(e.message);
+  })
   .finally(function () {
     _conn.release();
   });
@@ -392,6 +425,7 @@ exports.searchUser = searchUser;
 exports.getLadders = getLadders;
 exports.getGame = getGame;
 exports.getGames = getGames;
+exports.getMods = getMods;
 exports.createGame = createGame;
 exports.startGame = startGame;
 exports.getRating = getRating;

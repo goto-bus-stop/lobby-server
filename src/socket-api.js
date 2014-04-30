@@ -2,7 +2,8 @@ var PubSub = require('./PubSub'),
     api = require('./api'),
     signature = require('cookie-signature'),
     cookieParser = require('cookie-parser')(),
-    config = require('./config');
+    config = require('./config'),
+    debug = require('debug')('socket-api');
 
 module.exports = function (app) {
   var io = app.io;
@@ -69,6 +70,7 @@ module.exports = function (app) {
       // To work around that we just wrap aaaalll the socket stuff on the client side
       // in an on('ready') event :/
       sock.emit('ready');
+      debug('ready');
       
       if (session && disconnections[session.uid]) {
         clearTimeout(disconnections[session.uid]);
@@ -97,6 +99,11 @@ module.exports = function (app) {
       sock.on('api:games', function (cb) {
         api.getGames().then(function (games) {
           cb(games);
+        });
+      });
+      sock.on('api:mods', function (cb) {
+        api.getMods().then(function (mods) {
+          cb(mods);
         });
       });
       sock.on('api:online', function (cb) {

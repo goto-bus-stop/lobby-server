@@ -59,7 +59,7 @@ function PubSub() {
    * @return {Evts}
    */
   p.publish = function (evt, var_args) {
-    debug('publishing ', evt);
+    debug('publish ' + evt);
     var self = this,
       e = self.$events && self.$events[evt];
     if (e) {

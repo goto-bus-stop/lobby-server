@@ -1,0 +1,15 @@
+<h1>Mods</h1>
+<div class="media-list">
+  {{#each}}
+    <div class="media">
+      {{#link-to 'mod' this class="pull-left"}}
+        <img src="http://www.voobly.com/files/view/13816821/oh93s7zg9nqc336yp36gwxzq5vvuhqdi" alt="" class="media-object">
+      {{/link-to}}
+      <div class="media-body">
+        <h4 class="media-heading">{{title}}</h4>
+        {{descr}}<br>
+        {{#link-to 'mod-install' this class="btn btn-primary"}}<span class="fa fa-plus"></span> Install{{/link-to}}
+      </div>
+    </div>
+  {{/each}}
+</div>

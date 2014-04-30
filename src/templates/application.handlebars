@@ -1,3 +1,36 @@
-<div {{bind-attr class=":container currentRouteName"}}>
-  {{outlet}}
+<div class="navbar navbar-default navbar-fixed-top" role="navigation">
+  <div class="navbar-header">
+    <button type="button" class="navbar-toggle" data-toggle="collapse" data-target=".navbar-collapse">
+      <span class="sr-only">Toggle navigation</span>
+      <span class="icon-bar"></span>
+      <span class="icon-bar"></span>
+      <span class="icon-bar"></span>
+    </button>
+    <a class="navbar-brand" rel="home" href="#">Logo</a>
+  </div>
+  <div class="collapse navbar-collapse">
+    <ul class="nav navbar-nav">
+      <li>{{#link-to 'index'}}Lobby Browser{{/link-to}}</li>
+      <li>{{#link-to 'mods'}}Mod Center{{/link-to}}</li>
+      <li>{{#link-to 'profile' App.user.id}}Profile{{/link-to}}</li>
+    </ul>
+    <div class="col-sm-3 col-md-3 pull-right">
+      <form class="navbar-form" role="search">
+        <div class="input-group">
+          <input type="text" class="form-control input-sm" placeholder="Search" name="srch-term" id="srch-term">
+          <div class="input-group-btn">
+            <button class="btn btn-default btn-sm" type="submit"><span class="fa fa-search"></span></button>
+          </div>
+        </div>
+      </form>
+    </div>		
+  </div>
+</div>
+<div {{bind-attr class="sidebarOpen:sidebar-open :wrap"}}>
+  <div class="sidebar">
+    {{outlet sidebar}}
+  </div>
+  <div {{bind-attr class=":container-fluid :application currentRouteName"}}>
+    {{outlet}}
+  </div>
 </div>

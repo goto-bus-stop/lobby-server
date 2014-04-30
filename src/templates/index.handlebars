@@ -1,13 +1,51 @@
-<h1>Open Rooms</h1>
+<div class="header row">
+  <div class="col-lg-6 col-md-6 col-sm-10">
+    <h1>Open Rooms</h1>
+  </div>
+  <div class="col-lg-2 col-md-2 col-sm-2">
+    <button class="btn btn-primary pull-right" type="button" data-toggle="modal" data-target="#create-game-modal">Create Game</button>
+  </div>
+</div>
 <div class="row">
-  <div class="col-lg-8">
-    <ul class="list-unstyled">
+  <div {{bind-attr class="renderPlayerList:col-lg-8:col-lg-12"}}>
+    <ul {{bind-attr class=":list-unstyled :tabular single"}}>
       {{#each games}}
         {{view App.GameRoomSummary tagName="li"}}
       {{/each}}
     </ul>
-    <button class="btn btn-default" type="button" data-toggle="modal" data-target="#create-game-modal">Create Game</button>
-    <div class="modal" id="create-game-modal">
+  </div>
+  {{#if renderPlayerList}}
+    <div class="col-lg-4">
+      <div class="panel panel-default online-players">
+        <div class="panel-heading">Online Players</div>
+        <div class="panel-body">
+          <ul class="list-unstyled">
+            {{#each App.onlinePlayers}}
+              {{view App.UserItemView tagName="li"}}
+            {{/each}}
+          </ul>
+        </div>
+      </div>
+      <div class="panel panel-default chat hide">
+        <div class="panel-heading">Chat</div>
+        <div class="panel-body">
+          <div class="chat-messages">
+            {{#each chatMessages}}
+              {{view App.ChatMessageView}}
+            {{/each}}
+          </div>
+          <div class="input-group">
+            {{view App.TextField autofocus=true context=this value=message}}
+            <span class="input-group-btn">
+              <button class="btn btn-default" type="button" {{action "sendChat"}}>Send</button>
+            </span>
+          </div>
+        </div>
+      </div>
+    </div>
+  {{/if}}
+</div>
+<div class="modal" id="create-game-modal">
   <div class="modal-dialog">
     <div class="modal-content">
       <div class="modal-header">
@@ -45,25 +83,6 @@
       <div class="modal-footer">
         <button type="button" class="btn btn-default" data-dismiss="modal">Cancel</button>
         <button {{action "createGame"}} {{bind-attr disabled="sendingRequest"}} id="create-game-create" form="create-game-form" type="button" class="btn btn-primary">Create</button>
-      </div>
-    </div>
-  </div>
-</div>
-  </div>
-  <div class="col-lg-4">
-    <div class="panel panel-default">
-      <div class="panel-heading">Online Players</div>
-      <div class="panel-body">
-        <ul class="list-unstyled">
-          {{#each App.onlinePlayers}}
-            {{view App.UserItemView tagName="li"}}
-          {{/each}}
-        </ul>
-      </div>
-    </div>
-    <div class="panel panel-default">
-      <div class="panel-heading">Chat</div>
-      <div class="panel-body">
       </div>
     </div>
   </div>

@@ -1,3 +1,13 @@
+var debug = require('debug')('server');
+
+var _r = require;
+require = function (path) {
+  debug('require', path);
+  return _r(path);
+};
+
+debug('starting');
+
 var http = require('http'),
     path = require('path'),
     fs = require('fs');
@@ -9,7 +19,10 @@ var express = require('express'),
     session = require('express-session'),
     csurf = require('csurf'),
     logger = require('morgan'),
-    lessMiddleware = require('less-middleware');
+    lessMiddleware = require('less-middleware'),
+    pp = require('passport'),
+    LocalStrategy = require('passport-local').Strategy,
+    bcrypt = require('bcrypt');
 
 // Library stuff
 var when = require('when'),
@@ -25,16 +38,58 @@ var config = require('./config');
 var Handlebars = require('handlebars');
 require('./handlebars-helpers')(Handlebars);
 
+
+pp.serializeUser(function(user, done) {
+  done(null, user.id);
+});
+
+pp.deserializeUser(function(id, done) {
+  api.getUser(id)
+    .then(function (user) {
+      done(null, user);
+    })
+    .catch(function (err) { done(err); });
+});
+pp.use(new LocalStrategy(function (username, password, done) {
+  api.searchUser({ username: username }, true)
+    .then(function (user) {
+      if (user.length !== 1) {
+        return done(null, false);
+      }
+      user = user[0];
+      bcrypt.compare(password, user.password, function (err, res) {
+        if (err) return done(err);
+        delete user.password;
+        done(null, user);
+      });
+    })
+    .catch(function (err) {
+      done(err);
+    });
+}));
+
 // App setup
 var app = express();
 
-app.sessionStore = new session.MemoryStore();
+app.disable('x-powered-by');
+
+if (config.env === 'production') {
+//  var RedisStore = ('connect-redis')(session);
+  app.sessionStore = new RedisStore(config.redis);
+}
+else {
+  app.sessionStore = new session.MemoryStore();
+}
+
+app.passport = pp;
 
 //app.use(logger());
 app.use(cookieParser());
-app.use(session({ secret: config.cookie_secret, key: 'sid', store: app.sessionStore }));
 app.use(bodyParser());
-app.use(lessMiddleware(__dirname + '/public'));
+app.use(session({ secret: config.cookie_secret, key: 'sid', store: app.sessionStore }));
+app.use(pp.initialize());
+app.use(pp.session());
+app.use(lessMiddleware(__dirname + '/public', { debug: config.env === 'development' }));
 app.use(express.static(__dirname + '/public'));
 
 Handlebars.registerHelper('template', function (n) {
