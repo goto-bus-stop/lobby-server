@@ -1,4 +1,4 @@
-var debug = require('debug')('pubsub');
+const debug = require('debug')('pubsub');
 
 /**
  * Super-simple event system!
@@ -32,7 +32,7 @@ function PubSub() {
    * @return {Evts}
    */
   p.once = function (evt, fn) {
-    var self = this;
+    const self = this;
     return self.subscribe(evt, function onceFn() {
       fn.apply(this, arguments);
       self.unsubscribe(evt, onceFn);
@@ -55,18 +55,18 @@ function PubSub() {
   /**
    * Emit/trigger an event.
    * @param {string} evt Event name.
-   * @param {...*} var_args Arguments to pass to the event handler.
+   * @param {...*} args Arguments to pass to the event handler.
    * @return {Evts}
    */
-  p.publish = function (evt, var_args) {
+  p.publish = function (evt, args) {
     debug('publish ' + evt);
-    var self = this,
+    const self = this,
       e = self.$events && self.$events[evt];
     if (e) {
-      var_args = [].slice.call(arguments, 1);
+      args = [].slice.call(arguments, 1);
       process.nextTick(function () {
         for (var i = 0, l = e.length; i < l; i++) {
-          e[i].apply(self, var_args);
+          e[i].apply(self, args);
         }
       });
     }

@@ -1,7 +1,7 @@
 <button class="btn btn-primary btn-large pull-right" type="button" {{action "leave"}}>Leave</button>
 <h1>{{title}}</h1>
 <div class="row">
-  <div class="col-lg-3 players" style="background-color:#eef">
+  <div class="col-lg-3 players">
     {{#if hosting}}
       <button class="btn btn-primary" type="button" {{action "edit"}}>Room Settings</button>
     {{/if}}
@@ -18,23 +18,15 @@
           {{/each}}
         </ul>
       </dd>
-      <dt>Launch</dt>
-      <dd>
-        <button class="btn btn-primary" type="button" {{bind-attr disabled=unlaunchable}} {{action "launch"}}>Launch</button>
-      </dd>
+      {{#if hosting}}
+        <dt>Launch</dt>
+        <dd>
+          <button class="btn btn-primary" type="button" {{bind-attr disabled=unlaunchable}} {{action "launch"}}>Launch</button>
+        </dd>
+      {{/if}}
     </dl>
   </div>
   <div class="col-lg-9 chat">
-    <div class="chat-messages">
-      {{#each chatMessages}}
-        {{view App.ChatMessageView}}
-      {{/each}}
-    </div>
-    <div class="input-group">
-      {{view App.TextField autofocus=true context=this value=chatMessage}}
-      <span class="input-group-btn">
-        <button class="btn btn-default" type="button" {{action "sendChat"}}>Send</button>
-      </span>
-    </div>
+    {{chat-box room=id}}
   </div>
 </div>

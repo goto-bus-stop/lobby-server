@@ -1,5 +1,5 @@
 App.IndexController = Ember.Controller.extend({
-  gamesBinding: 'App.games',
+  games: [],
   gameData: {
     title: '',
     descr: '',

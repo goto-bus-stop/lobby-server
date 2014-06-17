@@ -1,16 +1,24 @@
-App.IndexRoute = Ember.Route.extend({  
+App.IndexRoute = Ember.Route.extend({
+  setupController: function (controller) {
+    var games = controller.get('games');
+    socket.emit('api:games', function (g) {
+      games.clear();
+      games.addObjects(g.map(function (game) { return App.GameRoom.create(game); }));
+    });
+  },
+  
   actions: {
-    join: function (rid) {
-      var self = this;
-      App.GameRoom.find(rid).then(function (room) {
-        if (room.get('locked')) {
-          self.transitionTo('game-room', rid, prompt('Enter Password:'));
-        }
-        else {
-          self.transitionTo('game-room', rid);
-        }
-      });
-    },
+//    join: function (rid) {
+//      var self = this;
+//      App.GameRoom.find(rid).then(function (room) {
+//        if (room.get('locked')) {
+//          self.transitionTo('game-room', rid/*, prompt('Enter Password:')*/);
+//        }
+//        else {
+//          self.transitionTo('game-room', rid);
+//        }
+//      });
+//    },
     createGame: function () {
       var self = this,
           data = this.get('controller.gameData'),

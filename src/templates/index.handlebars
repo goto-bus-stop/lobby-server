@@ -7,7 +7,7 @@
   </div>
 </div>
 <div class="row">
-  <div {{bind-attr class="renderPlayerList:col-lg-8:col-lg-12"}}>
+  <div {{bind-attr class="renderPlayerList:col-lg-8:col-lg-12 renderPlayerList:col-md-8:col-md-12 renderPlayerList:col-sm-6:col-sm-6"}}>
     <ul {{bind-attr class=":list-unstyled :tabular single"}}>
       {{#each games}}
         {{view App.GameRoomSummary tagName="li"}}
@@ -15,43 +15,24 @@
     </ul>
   </div>
   {{#if renderPlayerList}}
-    <div class="col-lg-4">
-      <div class="panel panel-default online-players">
-        <div class="panel-heading">Online Players</div>
-        <div class="panel-body">
-          <ul class="list-unstyled">
-            {{#each App.onlinePlayers}}
-              {{view App.UserItemView tagName="li"}}
-            {{/each}}
-          </ul>
-        </div>
-      </div>
-      <div class="panel panel-default chat hide">
-        <div class="panel-heading">Chat</div>
-        <div class="panel-body">
-          <div class="chat-messages">
-            {{#each chatMessages}}
-              {{view App.ChatMessageView}}
-            {{/each}}
-          </div>
-          <div class="input-group">
-            {{view App.TextField autofocus=true context=this value=message}}
-            <span class="input-group-btn">
-              <button class="btn btn-default" type="button" {{action "sendChat"}}>Send</button>
-            </span>
-          </div>
-        </div>
-      </div>
+    <div class="col-lg-4 col-md-4 col-sm-6">
+      {{#bs-panel heading="Online Players" classNames="online-players"}}
+        {{online-players}}
+      {{/bs-panel}}
+
+      {{#bs-panel heading="Chat" classNames="chat"}}
+        {{chat-box room="lobby"}}
+      {{/bs-panel}}
     </div>
   {{/if}}
 </div>
 <div class="modal" id="create-game-modal">
   <div class="modal-dialog">
     <div class="modal-content">
-      <div class="modal-header">
+      <header class="modal-header">
         <button type="button" class="close" data-dismiss="modal" aria-hidden="true">&times;</button>
         <h4 class="modal-title">Create Game</h4>
-      </div>
+      </header>
       <div class="modal-body">
         <form id="create-game-form" class="form-horizontal" action="/web/games" method="post">
           <div class="form-group">
@@ -80,10 +61,10 @@
           </div>
         </form>
       </div>
-      <div class="modal-footer">
+      <footer class="modal-footer">
         <button type="button" class="btn btn-default" data-dismiss="modal">Cancel</button>
         <button {{action "createGame"}} {{bind-attr disabled="sendingRequest"}} id="create-game-create" form="create-game-form" type="button" class="btn btn-primary">Create</button>
-      </div>
+      </footer>
     </div>
   </div>
 </div>

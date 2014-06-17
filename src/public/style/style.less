@@ -91,12 +91,13 @@ body {
   .single() {
     > li {
       width: 100%; margin: 0;
+      &:nth-child(2n) { margin: 0; }
     }
   }
   &.single {
     .single();
   }
-  @media (max-width: 720px) {
+  @media (max-width: 1000px) {
     .single();
   }
 
@@ -104,6 +105,9 @@ body {
     .panel-heading {
 //    font-size: 12pt;
 //    font-weight: bold;
+      .row > div {
+        .text-overflow();
+      }
     }
   
     .list-inline {
@@ -124,4 +128,14 @@ body {
   top: 50%;
   left: 50%;
   position: fixed;
+}
+
+.user-tooltip {
+  background: #fff;
+  margin: 5px 0 0 15px;
+  border: 1px solid #333;
+  
+  .table {
+    margin: 0;
+  }
 }

@@ -6,16 +6,4 @@
   {{/if}}
 </div>
 {{view App.UsernameView}}
-<div class="hide">
-  {{view App.UsernameView}}
-  <table class="table">
-    <thead>
-      <tr> <th>Ladder</th> <th>ELO</th> </tr>
-    </thead>
-    <tbody>
-      {{#each ratingsArray}}
-        <tr> <td>{{ladderName ladderId}}</td> <td>{{rating.elo}}</td> </tr>
-      {{/each}}
-    </tbody>
-  </table>
-</div>
+{{view App.UserTooltipView}}

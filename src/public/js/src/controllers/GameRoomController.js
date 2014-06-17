@@ -1,17 +1,13 @@
 App.GameRoomController = Ember.ObjectController.extend({
-  chatMessages: [],
-  chatMessage: '',
+  hosting: (function () {
+    return App.get('user.id') === this.get('host_id');
+  }).property('host_id'),
   
   actions: {
-    sendChat: function () {
-      var message = this.get('chatMessage');
-      this.set('chatMessage', '');
-      socket.emit('chat:room', message);
-    },
     launch: function () {
       this.set('status', 'launching');
-      socket.emit('api:launch', function (seskey) {
-        $('<iframe>').attr('src', 'dprun://' + seskey).appendTo('body');
+      socket.emit('game:launch', function (seskey) {
+        $.Element('iframe.hide').attr('src', App.PROTOCOL + '://launch/' + seskey).appendTo('body');
       });
     }
   }

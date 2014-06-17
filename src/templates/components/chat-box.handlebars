@@ -1,0 +1,11 @@
+<div class="chat-messages">
+  {{#each messages}}
+    {{view App.ChatMessageView}}
+  {{/each}}
+</div>
+<div class="input-group">
+  {{view App.TextField autofocus=true context=this value=message}}
+  <span class="input-group-btn">
+    <button class="btn btn-default" type="button" {{action "sendChat"}}>Send</button>
+  </span>
+</div>

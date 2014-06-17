@@ -1,5 +1,6 @@
-var debug = require('debug')('server');
+const debug = require('debug')('server');
 
+// require() debug
 var _r = require;
 require = function (path) {
   debug('require', path);
@@ -8,73 +9,43 @@ require = function (path) {
 
 debug('starting');
 
-var http = require('http'),
-    path = require('path'),
-    fs = require('fs');
+const http = require('http'),
+      path = require('path'),
+      fs = require('fs');
 
 // Web site stuff
-var express = require('express'),
-    cookieParser = require('cookie-parser'),
-    bodyParser = require('body-parser'),
-    session = require('express-session'),
-    csurf = require('csurf'),
-    logger = require('morgan'),
-    lessMiddleware = require('less-middleware'),
-    pp = require('passport'),
-    LocalStrategy = require('passport-local').Strategy,
-    bcrypt = require('bcrypt');
+const express = require('express'),
+      cookieParser = require('cookie-parser'),
+      bodyParser = require('body-parser'),
+      session = require('express-session'),
+      csurf = require('csurf'),
+      logger = require('morgan'),
+      lessMiddleware = require('less-middleware'),
+      pp = require('passport');
 
 // Library stuff
-var when = require('when'),
-    sequence = require('when/sequence');
-var _ = require('lodash');
-var socketio = require('socket.io');
+const when = require('when'),
+      sequence = require('when/sequence');
+const _ = require('lodash');
+const socketio = require('socket.io');
 
-var sql = require('./sql');
-var api = require('./api');
-var config = require('./config');
+const sql = require('./sql');
+const api = require('./api');
+const config = require('./config');
 
 // set up Handlebars helpers
-var Handlebars = require('handlebars');
+const Handlebars = require('handlebars');
 require('./handlebars-helpers')(Handlebars);
 
-
-pp.serializeUser(function(user, done) {
-  done(null, user.id);
-});
-
-pp.deserializeUser(function(id, done) {
-  api.getUser(id)
-    .then(function (user) {
-      done(null, user);
-    })
-    .catch(function (err) { done(err); });
-});
-pp.use(new LocalStrategy(function (username, password, done) {
-  api.searchUser({ username: username }, true)
-    .then(function (user) {
-      if (user.length !== 1) {
-        return done(null, false);
-      }
-      user = user[0];
-      bcrypt.compare(password, user.password, function (err, res) {
-        if (err) return done(err);
-        delete user.password;
-        done(null, user);
-      });
-    })
-    .catch(function (err) {
-      done(err);
-    });
-}));
+require('./passport')(pp);
 
 // App setup
-var app = express();
+const app = express();
 
 app.disable('x-powered-by');
 
 if (config.env === 'production') {
-//  var RedisStore = ('connect-redis')(session);
+  const RedisStore = require('connect-redis')(session);
   app.sessionStore = new RedisStore(config.redis);
 }
 else {
@@ -92,6 +63,7 @@ app.use(pp.session());
 app.use(lessMiddleware(__dirname + '/public', { debug: config.env === 'development' }));
 app.use(express.static(__dirname + '/public'));
 
+// View stuff
 Handlebars.registerHelper('template', function (n) {
   return fs.readFileSync(path.join(__dirname, 'templates', n + '.handlebars'), { encoding: 'utf8' });
 });
@@ -112,12 +84,18 @@ app.use('/api', require('./routes/web-api')(express.Router()));
 // Client API
 app.use('/_CLIENT', require('./routes/client-api')(express.Router()));
 
-var server = http.createServer(app);
-
-app.io = socketio.listen(server);
+const server = http.createServer(app);
+app.io = socketio(server);
 
 require('./socket-api')(app);
 
 server.listen(config.port, function () {
   console.log('Listening on port %d', server.address().port);
 });
+
+const User = require('./models/User');
+User.create({ id: 0 });
+
+setInterval(function () {
+  debug('memusage: ' + JSON.stringify(process.memoryUsage()));
+}, 30000);

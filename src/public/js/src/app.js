@@ -1,19 +1,15 @@
 // Need to rename to whatever our client name is gonna be
 App = Ember.Application.create({});
+App.deferReadiness();
 
-// routes
-App.Router.map(function () {
-  this.route('game-room', { path: '/room/:room_id' });
-  this.route('profile', { path: '/profile/:user_id' });
-  this.route('mods');
-  this.route('mod', { path: '/mods/:mod_id' });
-  this.route('mod-install', { path: '/mods/:mod_id/install' });
-});
+App.PROTOCOL = 'DPRun';
+
+App.store = Ember.Object.create({});
 
 App.reopen({
-  // We will hibernate when games are running, so we don't tax the user's pc too much.
+  // We will hibernate when games are running, so we don't tax the user's browser too much.
   hibernate: function () {
-    socket.disconnect();
+    socket.emit('hibernate');
   },
   // current page
   page: 'application',
@@ -29,8 +25,39 @@ App.reopen({
     this.soundsCache[s].play();
   },
   
+  prompt: function (title, msg, type) {
+    type = type || 'text';
+    var inp = $('<input>').attr('type', type),
+        ok = $('<button>').addClass('btn btn-primary').text('OK'),
+        modal = $('<div>').addClass('modal'),
+        modalDialog = $('<div>').addClass('modal-dialog'),
+        modalContent = $('<div>').addClass('modal-content'),
+        modalHeader = $('<header>').addClass('modal-header'),
+        modalTitle = $('<h4>').addClass('modal-title').text(title),
+        modalBody = $('<div>').addClass('modal-body').append(msg, inp),
+        modalFooter = $('<footer>').addClass('modal-footer').append(ok);
+    
+    return new Ember.RSVP.Promise(function (resolve, reject) {
+      ok.on('click', function () {
+        resolve(inp.val());
+        modal.remove();
+      });
+
+      modal.append(
+        modalDialog.append(
+          modalContent.append(
+            modalHeader.append(modalTitle),
+            modalBody,
+            modalFooter
+          )
+        )
+      ).appendTo('body').modal({ backdrop: false });
+    });
+  },
   
-  onlinePlayers: Ember.A()
+  notify: function (o) {
+    console[type === 'error' ? 'error' : 'log'](o.message);
+  }
 });
 
 // These things are going to be customizable at some point
@@ -41,26 +68,15 @@ App.settings = App.Settings.create({});
 
 // local caches
 // TODO make this some more official local store, maybe with SessionStorage or something.
-// TODO move games store into IndexController
-// TODO move online players store into an OnlinePlayersView
 // For now this is ugly.
-App.set('games', Ember.A());
 App.set('players', Ember.A());
 App.set('ladders', Ember.A());
-App.set('onlinePlayers', App.onlinePlayers);
-
-// defer this because App.Ladder does not exist because I haven't split all this init up yet
-// This should probably happen in a Controller somewhere
-setTimeout(function () {
-  App.get('ladders').pushObjects(__ladders.map(function (l) { 
-    return App.Ladder.create(l);
-  }));
-}, 0);
 
 // socket.io shim that allows us to send events before the server has finished authenticating us
 var socket = new function () {
   var sock = io.connect('http://' + location.hostname + ':' + location.port),
-      ready = false;
+      ready = false,
+      queued = [];
   sock.on('ready', function () {
     ready = true;
     // drain queue
@@ -69,7 +85,6 @@ var socket = new function () {
       sock[call.func].apply(sock, call.args);
     }
   });
-  var queued = [];
   function stub(fn) {
     return function () {
       if (ready) {
@@ -90,10 +105,10 @@ var socket = new function () {
 
 // WebSocket events
 socket.on('game-created', function (data) {
-  games.addObject(App.GameRoom.create(data));
+  App.store.get('games').addObject(App.GameRoom.create(data));
 });
 socket.on('game-starting', function (data) {
-  games.findBy('id', data).set('status', 'launching');
+  App.store.get('games').findBy('id', data).set('status', 'launching');
 });
 socket.on('room-left', function (uid, rid) {
   App.GameRoom.find(rid).then(function (room) {
@@ -111,7 +126,7 @@ socket.on('room-left', function (uid, rid) {
 });
 socket.on('room-joined', function (uid, rid) {
   App.User.find(uid).then(function (user) {
-    var room = App.get('games').findBy('id', parseInt(rid, 10));
+    var room = App.store.get('games').findBy('id', parseInt(rid, 10));
     room.get('players').pushObject(user);
     if (App.user.get('in_room_id') === rid) {
       if (room.get('full')) {
@@ -139,34 +154,9 @@ socket.on('room-destroyed', function (rids) {
     games.removeObject(i);
   });
 });
-socket.on('user-joined', function (uid) {
-  if (!App.onlinePlayers.anyBy('id', uid)) {
-    App.User.find(uid).then(function (user) {
-      App.onlinePlayers.pushObject(user);
-    });
-  }
-});
-socket.on('user-left', function (uid) {
-  App.onlinePlayers.any(function (p, i) {
-    if (p.get('id') === uid) {
-      App.onlinePlayers.removeAt(i);
-      return true;
-    }
-  });
-});
 
 // We want to know some things as soon as the socket is ready
-// TODO move api:games call to IndexController
-socket.emit('api:games', function (g) {
-  var games = App.get('games');
-  games.clear();
-  games.addObjects(g.map(function (game) { return App.GameRoom.create(game); }));
-});
 socket.emit('api:me', function (me) {
   App.set('user', App.User.create(me));
-});
-// TODO move api:online call to an OnlinePlayersView
-socket.emit('api:online', function (u) {
-  App.onlinePlayers.clear();
-  App.onlinePlayers.addObjects(u.map(function (user) { return App.User.create(user); }));
+  App.advanceReadiness();
 });

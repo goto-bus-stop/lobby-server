@@ -4,50 +4,27 @@
     <meta charset="utf-8">
     <meta http-equiv="X-UA-Compatible" content="IE=edge;">
     <title>AoCMulti</title>
-    <link rel="stylesheet" href="//netdna.bootstrapcdn.com/font-awesome/4.0.3/css/font-awesome.min.css">
-    <link rel="stylesheet" href="https://rawgithub.com/lipis/flag-icon-css/master/css/flag-icon.css">
+    <link rel="stylesheet" href="{{config.base_url}}style/font-awesome/css/font-awesome.css">
+    <link rel="stylesheet" href="http://localhost/flag-icon-css/css/flag-icon.css">
     <link rel="stylesheet" href="{{config.base_url}}style/style.css">
   </head>
   <body>
     <script>
-      var __ladders = {{json ladders}};
+      var __ladders = {{json ladders}},
+          __servers = {{json servers}};
     </script>
-    <script type="text/x-handlebars">
-      {{{template "application"}}}
-    </script>
-    <script type="text/x-handlebars" id="index">
-      {{{template "index"}}}
-    </script>
-    <script type="text/x-handlebars" id="username">
-      {{{template "username"}}}
-    </script>
-    <script type="text/x-handlebars" id="user-item">
-      {{{template "user-item"}}}
-    </script>
-    <script type="text/x-handlebars" id="game-room">
-      {{{template "game-room"}}}
-    </script>
-    <script type="text/x-handlebars" id="game-room-summary">
-      {{{template "game-room-summary"}}}
-    </script>
-    <script type="text/x-handlebars" id="chat-message">
-      {{{template "chat-message"}}}
-    </script>
-    <script type="text/x-handlebars" id="chatbox">
-      {{{template "chatbox"}}}
-    </script>
-    <script type="text/x-handlebars" id="mods">
-      {{{template "mods"}}}
-    </script>
-    <script type="text/x-handlebars" id="loading">
-      {{{template "loading"}}}
-    </script>
+    {{#each templates}}
+      <script type="text/x-handlebars"{{#unless (eq this "application")}} id="{{this}}"{{/unless}}>
+        {{{template this}}}
+      </script>
+    {{/each}}
+    <script src="{{config.base_url}}js/lib/es5-shim/es5-shim.js"></script>
     <script src="{{config.base_url}}js/lib/jquery/dist/jquery.js"></script>
     <script src="{{config.base_url}}js/lib/handlebars/handlebars.js"></script>
     <script src="{{config.base_url}}js/lib/ember/ember.js"></script>
     <script src="{{config.base_url}}js/lib/moment/moment.js"></script>
-    <script src="//netdna.bootstrapcdn.com/bootstrap/3.1.1/js/bootstrap.min.js"></script>
-    <script src="/socket.io/socket.io.js"></script>
+    <script src="{{config.base_url}}js/lib/bootstrap/dist/js/bootstrap.js"></script>
+    <script src="{{config.base_url}}socket.io/socket.io.js"></script>
     <script src="{{config.base_url}}js/build/app.js"></script>
   </body>
 </html>

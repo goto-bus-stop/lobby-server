@@ -1,0 +1,13 @@
+<div class="user-tooltip hide">
+  <strong>{{username}}</strong>
+  <table class="table">
+    <thead>
+      <tr> <th>Ladder</th> <th>ELO</th> </tr>
+    </thead>
+    <tbody>
+      {{#each ratingsArray}}
+        <tr> <td>{{ladderName ladderId}}</td> <td>{{rating.elo}}</td> </tr>
+      {{/each}}
+    </tbody>
+  </table>
+</div>

@@ -1,3 +1,7 @@
+var sql = require('../sql'),
+    PubSub = require('../PubSub');
+
+
 module.exports = function (app) {
   
   app.post('/join', function (req, res) {
@@ -15,6 +19,28 @@ module.exports = function (app) {
       res.json(session[0]);
     })
   
+    .finally(function () {
+      _conn.release();
+    });
+  });
+  
+  app.post('/ready', function (req, res) {
+    var _conn;
+    var seskey = req.params.seskey;
+    sql.getConnection().then(function (conn) { _conn = conn; })
+    
+    .then(function () {
+      return sql.query(_conn, 'SELECT room_id FROM sessions WHERE seskey = ?', [ seskey ]);
+    })
+    .then(function (rows) {
+      var r = rows[0];
+      PubSub.publish('game-ready', r.room_id);
+      res.json(true);
+    })
+    .catch(function () {
+      res.json(false);
+    })
+    
     .finally(function () {
       _conn.release();
     });

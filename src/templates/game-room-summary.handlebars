@@ -12,19 +12,19 @@
         {{ladder_name}}
       </div>
       <div class="col-lg-2 col-md-2 col-sm-5">
-        RM
+        {{ladder.game_type}}
       </div>
     </div>
   </div>
   <div class="panel-body">
-    <button class="btn btn-primary pull-right" {{bind-attr disabled=full}} {{action "join" id}}>
+    {{#link-to "game-room" id class="btn btn-primary pull-right"}}
       {{#if full}}
         Full
       {{else}}
         {{#if locked}} <span class="fa fa-lock"></span> {{/if}}
         Join
       {{/if}}
-    </button>
+    {{/link-to}}
     <ul class="list-inline">
       {{#each players}}
         {{view App.UsernameView tagName="li"}}
