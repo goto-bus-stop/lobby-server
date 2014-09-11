@@ -1,47 +1,55 @@
-// Need to rename to whatever our client name is gonna be
-App = Ember.Application.create({});
-App.deferReadiness();
+var debugA = debug('aocmulti:app')
+  , debugS = debug('aocmulti:socket')
+
+var App = window.App = Ember.Application.create({
+  LOG_TRANSITIONS: true          // basic logging of successful transitions
+, LOG_TRANSITIONS_INTERNAL: true // detailed logging of all routing steps
+})
+App.set('ladders', [])
+
+App.initializer({
+  name: 'injectStoreIntoComponent'
+, after: 'store'
+
+, initialize: function (container, application) {
+    container.typeInjection('component', 'store', 'store:main')
+  }
+})
 
 App.PROTOCOL = 'DPRun';
 
-App.store = Ember.Object.create({});
-
 App.reopen({
-  // We will hibernate when games are running, so we don't tax the user's browser too much.
-  hibernate: function () {
-    socket.emit('hibernate');
-  },
   // current page
-  page: 'application',
-  sidebarOpen: false,
+  page: 'application'
+, sidebarOpen: false
   
   // some sound management
-  soundsCache: {},
-  playSound: function (s) {
-    return;
+, soundsCache: {}
+, playSound: function (s) {
+    return
     if (!this.soundsCache[s]) {
-      this.soundsCache[s] = $('<audio>').attr('src', 'sound/' + s + '.wav').appendTo('body')[0];
+      this.soundsCache[s] = $('<audio>').attr('src', 'sound/' + s + '.wav').appendTo('body')[0]
     }
-    this.soundsCache[s].play();
-  },
+    this.soundsCache[s].play()
+  }
   
-  prompt: function (title, msg, type) {
+, prompt: function (title, msg, type) {
     type = type || 'text';
-    var inp = $('<input>').attr('type', type),
-        ok = $('<button>').addClass('btn btn-primary').text('OK'),
-        modal = $('<div>').addClass('modal'),
-        modalDialog = $('<div>').addClass('modal-dialog'),
-        modalContent = $('<div>').addClass('modal-content'),
-        modalHeader = $('<header>').addClass('modal-header'),
-        modalTitle = $('<h4>').addClass('modal-title').text(title),
-        modalBody = $('<div>').addClass('modal-body').append(msg, inp),
-        modalFooter = $('<footer>').addClass('modal-footer').append(ok);
+    var inp = $.Element('input').attr('type', type)
+      , ok = $.Element('button.btn.btn-primary').text('OK')
+      , modal = $.Element('div.modal')
+      , modalDialog = $.Element('div.modal-dialog')
+      , modalContent = $.Element('<div.modal-content')
+      , modalHeader = $.Element('<header.modal-header')
+      , modalTitle = $.Element('<h4.modal-title').text(title)
+      , modalBody = $.Element('<div.modal-body').append(msg, inp)
+      , modalFooter = $.Element('<footer.modal-footer').append(ok)
     
     return new Ember.RSVP.Promise(function (resolve, reject) {
       ok.on('click', function () {
-        resolve(inp.val());
-        modal.remove();
-      });
+        resolve(inp.val())
+        modal.remove()
+      })
 
       modal.append(
         modalDialog.append(
@@ -51,112 +59,144 @@ App.reopen({
             modalFooter
           )
         )
-      ).appendTo('body').modal({ backdrop: false });
-    });
-  },
-  
-  notify: function (o) {
-    console[type === 'error' ? 'error' : 'log'](o.message);
+      ).appendTo('body').modal({ backdrop: false })
+    })
   }
-});
+  
+, notify: function (o) {
+    console[o.type === 'error' ? 'error' : 'log'](o.message)
+  }
+  
+, DPRun: function (x) {
+    debugA('DPRun', x)
+    var iframe = $.Element('iframe.hide').attr('src', App.PROTOCOL + '://' + x)
+    iframe.appendTo('body')
+    iframe.on('load', function () { iframe.remove() })
+  }
+  
+, promisify: function (resolve, reject) {
+    return function (e, val) {
+      if (e) reject(e)
+      else resolve(val)
+    }
+  }
+})
 
 // These things are going to be customizable at some point
-App.Settings = Ember.Object.extend({
+App.SettingsController = Ember.Controller.extend({
   defaultLadder: 1
-});
-App.settings = App.Settings.create({});
+})
 
-// local caches
-// TODO make this some more official local store, maybe with SessionStorage or something.
-// For now this is ugly.
-App.set('players', Ember.A());
-App.set('ladders', Ember.A());
-
-// socket.io shim that allows us to send events before the server has finished authenticating us
-var socket = new function () {
-  var sock = io.connect('http://' + location.hostname + ':' + location.port),
-      ready = false,
-      queued = [];
-  sock.on('ready', function () {
-    ready = true;
-    // drain queue
-    var call;
-    while (call = queued.shift()) {
-      sock[call.func].apply(sock, call.args);
-    }
-  });
-  function stub(fn) {
-    return function () {
-      if (ready) {
-        sock[fn].apply(sock, arguments);
-      }
-      else {
-        queued.push({ func: fn, args: arguments });
-      }
-    };
+var Subscription = Ember.Object.extend({
+  sock: null
+, channel: null
+, evts: []
+, subscribed: function () { debugS('default subscribed callback') }
+, terminated: function () { debugS('default termination callback') }
+  
+, init: function () {
+    debugS('subscribing to ', this.get('channel'))
+//    this.get('sock').emit('subscribe', this.get('channel'), this.onSubscribed.bind(this))
   }
-  return {
-    emit: stub('emit'),
-    on: stub('on'),
-    off: stub('removeListener'),
-    disconnect: sock.disconnect.bind(sock)
-  };
-};
-
-// WebSocket events
-socket.on('game-created', function (data) {
-  App.store.get('games').addObject(App.GameRoom.create(data));
-});
-socket.on('game-starting', function (data) {
-  App.store.get('games').findBy('id', data).set('status', 'launching');
-});
-socket.on('room-left', function (uid, rid) {
-  App.GameRoom.find(rid).then(function (room) {
-    var players = room.get('players'),
-        remove = [];
-    players.forEach(function (p) {
-      if (p.get('id') == uid) {
-        remove.push(p);
-      }
-    });
-    remove.forEach(function (i) {
-      players.removeObject(i);
-    });
-  });
-});
-socket.on('room-joined', function (uid, rid) {
-  App.User.find(uid).then(function (user) {
-    var room = App.store.get('games').findBy('id', parseInt(rid, 10));
-    room.get('players').pushObject(user);
-    if (App.user.get('in_room_id') === rid) {
-      if (room.get('full')) {
-        App.playSound('room-full');
-      }
-      else {
-        App.playSound('room-joined');
+, on: function (evt, cb) {
+    debugS('subscription ' + this.get('channel') + ' event', evt)
+    this.get('evts').push([ evt, cb ])
+    this.get('sock').on(this.get('channel') + ':' + evt, cb)
+    return this
+  }
+, off: function (evt, cb) {
+    debugS('subscription ' + this.get('channel') + ' event removal', evt)
+    var evts = this.get('evts')
+      , i = evts.length
+    while (i--) {
+      if (evts[i][0] === evt && (!cb || evts[i][1] === cb)) {
+        evts.splice(i, 1)
       }
     }
-  });
-});
-socket.on('room-destroyed', function (rids) {
-  if (!Array.isArray(rids)) {
-    rids = [ rids ];
+    this.get('sock').off(this.get('channel') + ':' + evt, cb)
   }
-  var remove = [];
-  rids.forEach(function (deletedId) {
-    games.forEach(function (game, i) {
-      if (game.get('id') == deletedId) {
-        remove.push(game);
-      }
-    });
-  });
-  remove.forEach(function (i) {
-    games.removeObject(i);
-  });
-});
+, onSubscribed: function () {
+    debugS('subscribed to ', this.get('channel'))
+    var sub = this.get('subscribed')
+    sub && sub()
+  }
+, terminate: function (cb) {
+    debugS('subscription termination', this.get('channel'))
+    var channel = this.get('channel')
+      , sock = this.get('sock')
+    this.get('evts').forEach(function (evt) {
+      sock.off(channel + ':' + evt[0], evt[1])
+    }, this)
+    var term = this.get('terminated')
+    term && term()
+  }
+})
+App.Socket = Ember.Object.extend(Ember.Evented, {
+  sock: null
+, subscriptions: {}
+  
+, connect: function () {
+    this.set('sock', io.connect(this.get('url')))
+  }
+  
+, emit: function () {
+    var sock = this.get('sock')
+    sock.emit.apply(sock, arguments)
+    return this
+  }
+, on: function () {
+    var sock = this.get('sock')
+    sock.on.apply(sock, arguments)
+    return this
+  }
+, off: function () {
+    var sock = this.get('sock')
+    sock.off.apply(sock, arguments)
+    return this
+  }
+  
+, subscribe: function (channel, subCb) {
+    var subscriptions = this.get('subscriptions')
+      , sock = this.get('sock')
+      , subscription = Subscription.create({
+          sock: sock
+        , channel: channel
+        , subscribed: subCb || Ember.K
+        , terminated: function () {
+            if (--subscriptions[channel] <= 0) {
+              sock.emit('unsubscribe', channel)
+            }
+          }
+        })
+    if (!subscriptions[channel]) {
+      subscriptions[channel] = 1
+      sock.emit('subscribe', channel, subscription.onSubscribed.bind(subscription))
+    }
+    else {
+      subscriptions[channel]++
+      subscription.onSubscribed()
+    }
+    return subscription
+  }
+})
 
-// We want to know some things as soon as the socket is ready
-socket.emit('api:me', function (me) {
-  App.set('user', App.User.create(me));
-  App.advanceReadiness();
-});
+// socket.io
+var socket = window.socket = App.Socket.create({ url: 'http://' + location.hostname + ':' + location.port })
+socket.connect()
+
+socket.on('error', function (e) {
+  debugS(e.stack, e.description.stack)
+})
+
+setInterval(function reloadStyles() {
+  var s = document.getElementById('mainStyle')
+    , ns = document.createElement('link')
+  ns.type = 'text/css'
+  ns.href = s.href.replace(/\.css(\?.*)?$/, '.css?' + Math.random())
+  ns.rel = 'stylesheet'
+  $(ns).appendTo('head')
+  setTimeout(function () {
+    ns.id = 'mainStyle'
+    $(s).remove()
+  }, 500)
+}, 5000)

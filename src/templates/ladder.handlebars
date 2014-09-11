@@ -1,0 +1,25 @@
+<h1 class="page-header">{{ladder.fullName}}
+  <small>
+    {{#each App.ladders}}
+      {{#link-to 'ladder' id}}{{fullName}}{{/link-to}}
+    {{/each}}
+  </small>
+</h1>
+<table class="table-striped table">
+  <tr>
+    <th>Player</th>
+    <th>ELO</th>
+    <th>Wins</th>
+    <th>Losses</th>
+    <th>Streak</th>
+  </tr>
+  {{#each}}
+    <tr>
+      <td><i {{bind-attr class=":flag-icon flagClassName"}}></i> {{username}}</td>
+      <td>{{defaultRating.elo}}</td>
+      <td>{{defaultRating.wins}}</td>
+      <td>{{defaultRating.losses}}</td>
+      <td>{{defaultRating.streak}}</td>
+    </tr>
+  {{/each}}
+</table>

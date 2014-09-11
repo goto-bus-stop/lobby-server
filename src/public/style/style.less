@@ -13,7 +13,66 @@ body {
   }
   
   .header {
-    .btn { margin-top: 22px; }
+    div.padded { padding-top: 22px; }
+    .form-group { margin-bottom: 0; }
+  }
+  
+  .sidebar {
+    position: fixed;
+    top: 40px;
+    right: 0;
+    bottom: 15px;
+
+    > .panel {
+      border-radius: 0;
+      margin: 0;
+      height: 50%;
+    }
+    .online-players {
+      border-bottom: 0;
+    }
+    
+    .chat {
+      .panel-body {
+        @panel-heading-height: 42px;
+        padding: @panel-heading-height 15px 0 15px;
+        position: absolute;
+        right: 0;
+        width: 100%;
+        bottom: 0;
+        top: 50%;
+      }
+      
+      .chat-box {
+        position: relative;
+        height: 100%;
+      }
+      
+      .chat-messages {
+        position: absolute;
+        // hnng >_<
+        bottom: 34px;
+        top: 15px;
+        overflow-y: scroll;
+        left: 0;
+        right: 0;
+        padding: 0 15px 0 15px;
+      }
+      
+      .chat-input {
+        position: absolute;
+        bottom: 0;
+        
+        input {
+          border-top-left-radius: 0;
+          border-bottom-left-radius: 0;
+        }
+        button {
+          border-top-right-radius: 0;
+          border-bottom-right-radius: 0;
+        }
+      }
+    }
   }
 }
 
@@ -23,35 +82,67 @@ body {
   bottom: 0;
   left: 0; right: 0;
   
-  .players {
-    position: absolute;
-    top: 70px;
-    left: 0;
-    bottom: 0;
-  }
-  
   .chat {
     position: absolute;
-    right: 0;
-    top: 70px;
-    bottom: 0;
+    left: 25%;
+    // hnnng :(
+    top: 69px;
+    bottom: 15px;
     
-    .message {
-      .system {
-        font-style: italic;
-        color: #777;
-      }
-    }
-    
-    .input-group {
+    .chat-box { height: 100%; }
+    .chat-messages {
       position: absolute;
-      bottom: 10px;
+      // hnnng! :C
+      bottom: 34px;
+      top: 0;
+      left: 0;
+      right: 0;
+      overflow-y: scroll;
+      padding-right: 15px;
+    }
+    .chat-input {
+      bottom: 0;
+      position: absolute;
+    }
+  }
+  
+//  .is-host .username {
+//    &::before {
+//      display: inline-block;
+//      font-family: FontAwesome;
+//      font-style: normal;
+//      font-weight: normal;
+//      line-height: 1;
+//      -webkit-font-smoothing: antialiased;
+//      -moz-osx-font-smoothing: grayscale;
+//      content: "\f007";
+//    }
+//  }
+}
+
+.chat-box {
+  position: relative;
+
+  .message {
+    &.system {
+      font-style: italic;
+      color: #777;
+    }
+
+    .username {
+      font-weight: bold;
+    }
+
+    time {
+      font-size: 75%;
+      color: #777;
+      float: right;
     }
   }
 }
 
 @sidebar-width: 350px;
-.sidebar {
+.app-sidebar {
   position: absolute;
   left: -@sidebar-width;
   top: 0;
@@ -65,7 +156,7 @@ body {
   background-color: #fff;
 }
 .sidebar-open {
-  .sidebar {
+  .app-sidebar {
     left: 0;
     opacity: 1;
   }
@@ -102,6 +193,12 @@ body {
   }
 
   .game-room-summary {
+    &.aoh {
+      .panel-heading {
+        background-color: #e5f5e5;
+      }
+    }
+    
     .panel-heading {
 //    font-size: 12pt;
 //    font-weight: bold;
@@ -130,12 +227,46 @@ body {
   position: fixed;
 }
 
-.user-tooltip {
-  background: #fff;
-  margin: 5px 0 0 15px;
-  border: 1px solid #333;
-  
-  .table {
-    margin: 0;
+.filter-query-wrap {
+  .dropdown-menu {
+    width: 100%;
+    padding: 5px;
+    ul { margin-bottom: 0;
+      li { cursor: pointer; } }
   }
+  
+  .filter-query {
+    font-family: monospace;
+
+    .tok-andor { color: #777 }
+    .tok-whitespace {
+      // background-image: radial-gradient(circle, #ccc 0%, #ccc 10%, rgba(0, 0, 0, 0) 11%)
+    }
+    .tok-key { color: #5c2979 }
+    .tok-player { color: #222 }
+    .tok-word { color: #9f1616 }
+    .tok-num { color: #187925 }
+    .tok-generic { color: #9d699d }
+  }
+}
+
+.user-tooltip {
+  z-index: @zindex-tooltip;
+}
+//  background: #fff;
+//  margin: 5px 0 0 15px;
+//  border: 1px solid #333;
+//  
+//  .table {
+//    margin: 0;
+//  }
+//}
+
+#context-menu {
+  position: absolute;
+  float: none;
+  z-index: 1060;
+  margin: 3px;
+  
+  &.open { display: block }
 }

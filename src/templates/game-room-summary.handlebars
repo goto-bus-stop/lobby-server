@@ -5,19 +5,13 @@
         {{#if locked}} <span class="fa fa-lock"></span> {{/if}}
         {{title}}
       </div>
-      <div class="col-lg-2 col-md-2 col-sm-5">
-        {{players.length}}/{{max_players}}
-      </div>
-      <div class="col-lg-3 col-md-3 col-sm-7">
-        {{ladder_name}}
-      </div>
-      <div class="col-lg-2 col-md-2 col-sm-5">
-        {{ladder.game_type}}
-      </div>
+      <div class="col-lg-2 col-md-2 col-sm-5"> {{players.length}}/{{maxPlayers}} </div>
+      <div class="col-lg-3 col-md-3 col-sm-7"> {{ladder.name}} </div>
+      <div class="col-lg-2 col-md-2 col-sm-5"> {{ladder.gameType}} </div>
     </div>
   </div>
   <div class="panel-body">
-    {{#link-to "game-room" id class="btn btn-primary pull-right"}}
+    {{#link-to "game-room" this class="btn btn-primary pull-right"}}
       {{#if full}}
         Full
       {{else}}

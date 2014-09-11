@@ -1,0 +1,153 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta http-equiv="X-UA-Compatible" content="IE=edge;">
+<title>AoCMulti</title>
+<link rel="stylesheet" href="{{config.base_url}}style/font-awesome/css/font-awesome.css">
+<link rel="stylesheet" href="http://localhost:8000/flag-icon-css/css/flag-icon.css">
+<style>.host::after { content: " (host)" }</style>
+</head>
+<body>
+<script>
+  var ladders = {{json ladders}},
+      servers = {{json servers}};
+  onerror=function(e){console.error(e.stack||e.message||e)}
+</script>
+<script src="{{config.base_url}}js/lib/es5-shim/es5-shim.js"></script>
+<script src="{{config.base_url}}js/lib/debug/dist/debug.js"></script>
+<script src="{{config.base_url}}js/lib/jquery/dist/jquery.js"></script>
+<script src="{{config.base_url}}js/lib/moment/moment.js"></script>
+<script src="{{config.base_url}}js/lib/bootstrap/dist/js/bootstrap.js"></script>
+<script src="{{config.base_url}}js/lib/lodash/dist/lodash.js"></script>
+<script src="{{config.base_url}}socket.io/socket.io.js"></script>
+<table style="width:100%">
+  <tr>
+    <td style="width:30%" valign=top>
+      <ol id="players">
+      </ol>
+    </td>
+    <td valign=top>
+      <input type="text" id="msg" autofocus style=Width:100%>
+      <div id="chat"></div>
+    </td>
+  </tr>
+</table>
+<script>
+  var sort = curry(function (fn, a) { return a.sort(fn) })
+  var forEach = curry(function (fn, a) { return a.forEach(fn) })
+  var map = curry(function (fn, a) { return a.map(fn) })
+  var hasId = curry(function (id, o) { return o.id == id })
+  var not = function (a) { return !a }
+  var username = function (u) { return '<i class="flag-icon flag-icon-' + u.country + '"></i> <strong>' + u.username + '</strong>' }
+  var appendPlayerElement = curry(function (g, u) {
+    $('#players').append(
+      '<li class="user' + (u.id == g.hostId ? ' host' : '') + '" data-user-id="' + u.id + '">' +
+        username(u) +
+      '</li>'
+    )
+  })
+  var refreshPlayers = function (g) {
+    query('user', { id: g.players }, function (e, u) {
+      u.sort(function (a, b) { return (g.hostId == b.id) - (g.hostId == a.id) })
+      $('#players li').remove()
+      u.forEach(function (p) {
+        appendPlayerElement(g, p)
+      })
+    })
+    
+    $('#launch').remove()
+    if (g.hostId == me.id) {
+      var launch = $('<button class="btn btn-primary" id="launch">Launch</button>')
+      $('#players').after(launch)
+      launch.on('click', function () {
+        emit('gameRoom:launch', function (e, ses) {
+          console.log('DPRun://' + ses.seskey)
+        })
+      })
+    }
+  }
+  var find = curry(function (type, id, cb) {
+    sock.emit('store:find', type, id, function (a, b, c) {
+      setTimeout(cb.bind(null, a, b, c), 1)
+    })
+  })
+  var query = curry(function (type, q, cb) {
+    sock.emit('store:findQuery', type, q, function (a, b, c) {
+      setTimeout(cb.bind(null, a, b, c), 1)
+    })
+  })
+  var subscribe = function (channel, cb) {
+    sock.emit('subscribe', channel, cb)
+  }
+
+  var sock = io.connect('http://' + location.hostname + ':' + location.port)
+    , emit = sock.emit.bind(sock)
+    , on = sock.on.bind(sock)
+    , ROOM = 1
+  
+  emit('users:me', function (e, myId) {
+    find('user', myId, function (e, me) {
+      console.log(myId)
+      window.me = me
+      subscribe('gameRoom', function () {
+        console.log('subscribed')
+        find('gameRoom', ROOM, function (err, g) {
+          if (err) throw err
+          window.g = g
+          refreshPlayers(g)
+          emit('gameRoom:join', ROOM, function () {
+            on('gameRoom:playerEntered', function (rid, uid) {
+              if (rid != ROOM) return
+              console.log('playerEntered', uid)
+              g.players.indexOf(uid) < 0 && g.players.push(uid)
+              refreshPlayers(g)
+            })
+            on('gameRoom:playerLeft', function (rid, uid) {
+              if (rid != ROOM) return
+              console.log('playerLeft', uid)
+              g.players = g.players.filter(function (u) { return u != uid })
+              refreshPlayers(g)
+            })
+            on('gameRoom:hostChanged', function (rid, uid) {
+              if (rid != ROOM) return
+              g.hostId = uid
+              refreshPlayers(g)
+            })
+//            on('gameRoom:starting', function (key) {
+//              console.log('DPRun://' + key)
+//            })
+          })
+          emit('chat:subscribe', ROOM, function () {
+            on('chat:message:' + ROOM, function (m) {
+              $('#chat').append(m.uid === 0 ? '<div><em>' + m.msg + '</em></div>' : '<div>' + username(m) + ' &nbsp; ' + m.msg + '</div>')
+            })
+          })
+        })
+      })
+    })
+  })
+  
+  var msg = $('#msg')
+  msg.on('keypress', function (e) {
+    if (e.keyCode == 13) emit('chat:send', ROOM, msg.val(), function () {}), msg.val('')
+  })
+  
+  sock.on('error', function (e) {
+    console.error(e.stack, e.description.stack)
+  })
+
+  function curry(fn, l) {
+    l || (l = fn.length)
+    return function () {
+      var args = [], s = this
+      function c() {
+        args = args.concat([].slice.call(arguments))
+        return args.length >= l ? fn.apply(s, args) : c
+      }
+      return c.apply(null, arguments)
+    }
+  }
+</script>
+</body>
+</html>

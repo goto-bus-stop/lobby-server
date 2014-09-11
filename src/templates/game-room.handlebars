@@ -2,27 +2,28 @@
 <h1>{{title}}</h1>
 <div class="row">
   <div class="col-lg-3 players">
-    {{#if hosting}}
-      <button class="btn btn-primary" type="button" {{action "edit"}}>Room Settings</button>
-    {{/if}}
+    {{#if hosting}} <button class="btn btn-primary" type="button" {{action "edit"}}>Room Settings</button> {{/if}}
     <dl>
       <dt>Description</dt>
       <dd>{{desc}}</dd>
-      <dt>Host</dt>
-      {{view App.UserItemView context=host tagName="dd"}}
-      <dt>Players ({{players.length}} / {{max_players}})</dt>
+      <dt>Ladder</dt>
+      <dd>{{ladder.fullName}}</dd>
+      <dt>Players ({{players.length}} / {{maxPlayers}})</dt>
       <dd>
-        <ul class="list-unstyled">
-          {{#each otherPlayers}}
-            {{view App.UserItemView tagName="li"}}
+        <ul class="list-unstyled players-list">
+          {{#if host}}
+            {{view App.UserItemView context=host tagName="li" classNames="is-host"}}
+          {{else}}
+            <li class="text-warning">Could not fetch players</li>
+          {{/if}}
+          {{#each player in otherPlayers}}
+            {{view App.UserItemView context=player ladder=ladder tagName="li"}}
           {{/each}}
         </ul>
       </dd>
       {{#if hosting}}
         <dt>Launch</dt>
-        <dd>
-          <button class="btn btn-primary" type="button" {{bind-attr disabled=unlaunchable}} {{action "launch"}}>Launch</button>
-        </dd>
+        <dd> <button class="btn btn-primary" type="button" {{bind-attr disabled=unlaunchable}} {{action "launch"}}>Launch</button> </dd>
       {{/if}}
     </dl>
   </div>

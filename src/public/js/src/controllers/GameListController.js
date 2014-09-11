@@ -1,4 +1,4 @@
-App.GameListController = Ember.Controller.extend({
-  gamesBinding: 'App.games',
-  single: true
-});
+App.GameListController = App.IndexController.extend({
+  layout: 'list'
+, renderPlayerList: false
+})

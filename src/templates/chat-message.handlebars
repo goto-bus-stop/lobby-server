@@ -1,8 +1,9 @@
 <div class="message">
-  {{format time "HH:mm:ss"}}
-  {{#if isSystemMessage}}
+  <time>{{unbound format time "HH:mm:ss"}}</time>
+  {{#unboundIf isSystemMessage}}
     [ <span class="system">{{msg}}</span> ]
   {{else}}
-    {{view App.UsernameView context=user tagName="strong"}} {{msg}}
-  {{/if}}
+    <span class="username" data-user-id="{{unbound uid}}"><span {{bind-attr class=":flag-icon flagClassName"}}></span> {{username}}</span>
+    {{msg}}
+  {{/unboundIf}}
 </div>

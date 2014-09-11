@@ -1,47 +1,50 @@
+var debugO = debug('aocmulti:component:onlinePlayers')
+
 App.OnlinePlayersComponent = Ember.Component.extend({
-  tagName: 'ul',
-  classNames: [ 'list-unstyled' ],
+  tagName: 'ul'
+, classNames: [ 'list-unstyled' ]
   
-  onlinePlayers: Ember.A(),
-  
-  onConnected: function (userIds) {
-    var onlinePlayers = this.get('onlinePlayers');
-    socket.emit('api:online', function (p) {
-      onlinePlayers.clear();
-      Ember.RSVP.all(
-        p.map(function (u) {
-          return App.User.find(u);
+, onConnected: function (userIds) {
+    this.set('onlinePlayers', [])
+    var onlinePlayers = this.get('onlinePlayers')
+      , store = this.store
+    socket.emit('onlinePlayers:list', function (err, ids) {
+      if (err) debugO(err)
+      else {
+        store.find('user', { id: ids }).then(function (players) {
+          onlinePlayers.clear()
+          onlinePlayers.pushObjects(players.toArray())
         })
-      ).then(function (players) {
-        onlinePlayers.pushObjects(players);
-      });
-    });
-  },
-  onDisconnected: function () {
-  },
-  onJoin: function (p) {
-    this.get('onlinePlayers').pushObject(App.User.find(p));
-  },
-  onLeave: function (p) {
-    var onlinePlayers = this.get('onlinePlayers');
+      }
+    })
+    debugO(this)
+  }.on('connected')
+, onJoin: function (p) {
+    this.store.find('user', p).then(function (x) {
+      this.get('onlinePlayers').pushObject(x)
+    }.bind(this))
+  }.on('join')
+, onLeave: function (p) {
+    var onlinePlayers = this.get('onlinePlayers')
     onlinePlayers.any(function (online, i) {
       if (online.get('id') === p.id) {
-        onlinePlayers.removeAt(i);
-        return true;
+        onlinePlayers.removeAt(i)
+        return true
       }
-    });
-  },
+    })
+  }.on('leave')
   
-  connect: function () {
-    socket.emit('subscribe', 'online-players', this.onConnected.bind(this));
-    this.onJoinBound = this.onJoin.bind(this);
-    this.onLeaveBound = this.onLeave.bind(this);
-    socket.on('online-players:join', this.onJoinBound);
-    socket.on('online-players:leave', this.onLeaveBound);
-  }.on('didInsertElement'),
-  disconnect: function () {
-    socket.emit('unsubscribe', 'online-players', this.onDisconnected.bind(this));
-    socket.off('online-players:join', this.onJoinBound);
-    socket.off('online-players:leave', this.onLeaveBound);
-  }.on('willDestroyElement'),
-});
+, connect: function () {
+    this.onJoinBound = this.trigger.bind(this, 'join')
+    this.onLeaveBound = this.trigger.bind(this, 'leave')
+    this.set('subscription',
+      socket.subscribe('onlinePlayers', this.trigger.bind(this, 'connected'))
+        .on('joined', this.onJoinBound)
+        .on('left', this.onLeaveBound)
+    )
+  }.on('willInsertElement')
+, disconnect: function () {
+    this.get('subscription').terminate()
+    this.trigger('disconnected')
+  }.on('willDestroyElement')
+})

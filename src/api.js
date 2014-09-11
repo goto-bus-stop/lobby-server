@@ -1,457 +1,187 @@
-var when = require('when'),
-    sequence = require('when/sequence');
-var _ = require('lodash');
+'use strict'
 
-var sql = require('./sql');
-var PubSub = require('./PubSub');
-var debug = require('debug')('api');
+const _ = require('lodash')
+    , sql = require('./sql')
+    , PubSub = require('./PubSub')
+    , Promise = require('./promise')
+    , debug = require('debug')('aocmulti:api')
+    , store = require('./store')
+    , uuid = require('node-uuid')
 
-// '#' is placeholder for table prefix
-var userKeys = [ '#id', '#username', '#country', '#status', '#in_room_id' ],
-    roomKeys = [ '#id', '#title', '#descr', '#max_players', '#ladder_id', '#host_id', '#status', '(LENGTH(#password) > 0) AS locked' ];
+//+ writeDebugMessage :: Error -> IO
+const writeDebugMessage = compose(console.error.bind(console), pluck('stack'))
 
-// Returns SQL list of column names or operations, with optional prefix
-function k(keys, prefix) {
-  if (prefix) {
-    prefix += '.';
-  }
-  else {
-    prefix = '';
-  }
-  return keys.map(function (key) { return key.replace(/#/, prefix); }).join(', ');
+const addPlayers = function (room) {
+  return store.queryMany('user', { roomId: room.id }, [ 'id' ])
+    .then(map(pluck('id')))
+    .then(compose(merge(room), singleton('players')))
 }
-
-var prefixKeys = sql.prefixKeys;
-
-function generateSeskey() {
-  var l = 10,
-      chars = '1234567890abcdef',
-      str = '';
-  while (l--) {
-    str += chars[ Math.floor(Math.random() * chars.length) ];
-  }
-  return pad(_.now().toString(16), 13) + str;
-  
-  function pad(x, l) {
-	while (x.length < l) x += '0';
-	return x;
-  }
+const addPlayersA = function (rooms) {
+  if (!rooms || rooms.length === 0) return rooms
+  let roomsMap = _.indexBy(rooms, 'id')
+  return store.queryMany('user', { roomId: map(pluck('id'), rooms) })
+    .then(forEach(function (user) {
+      const thisRoom = roomsMap[user.roomId]
+      thisRoom.players = (thisRoom.players || []).concat([ user.id ])
+    }))
+    .then(constant(rooms))
+    .catch(writeDebugMessage)
 }
 
-function withRatings(user) {
-  if (Array.isArray(user)) {
-    var users = _.indexBy(user, 'id');
-    return getRatings(Object.keys(users)).then(function (ratings) {
-      ratings.forEach(function (rating) {
-        if (!users[rating.user_id].ratings) {
-          users[rating.user_id].ratings = {};
-        }
-        users[rating.user_id].ratings[rating.ladder_id] = rating;
-      });
-      return user;
-    });
-  }
-  return getRatings(user.id).then(function (ratings) {
-    user.ratings = {};
-    ratings.forEach(function (rating) {
-      user.ratings[rating.ladder_id] = rating;
-    });
-    return user;
-  });
+const cleanRatingRecord = compose(without('userId'), without('rating'))
+const addRatings = function (user) {
+  debug('addRatings', user)
+  user.ratings = {}
+  return store.queryMany('rating', { userId: user.id })
+    .then(isolate(debug))
+    .then(forEach(function (rating) {
+      user.ratings[rating.ladderId] = cleanRatingRecord(rating)
+    }))
+    .then(constant(user))
+    .catch(writeDebugMessage)
+}
+const addRatingsA = function (users) {
+  if (!users || users.length === 0) return users
+  debug('addRatingsA', users.length)
+  let usersMap = {}
+    , userIds = []
+  users.forEach(function (user) {
+    usersMap[user.id] = user
+    userIds.push(user.id)
+    user.ratings = {}
+  })
+  return store.queryMany('rating', { userId: userIds })
+    .then(forEach(function (rating) {
+      usersMap[rating.userId].ratings[rating.ladderId] = cleanRatingRecord(rating)
+    }))
+    .then(constant(users))
+    .catch(writeDebugMessage)
 }
 
-function searchUser(data, all) {
-  var _conn;
-  return sql.getConnection().then(function (conn) { _conn = conn; })
-  
-  .then(function () {
-    console.log(prefixKeys(data, 'u'));
-    return sql.query(_conn,
-                     'SELECT ' + (all ? 'u.*' : k(userKeys, 'u')) + ', ' +
-                       'GROUP_CONCAT((SELECT o.server_id FROM online o WHERE o.user_id = u.id)) AS online_in ' +
-                     'FROM users u ' +
-                     'WHERE ?', [ prefixKeys(data, 'u') ]);
-  })
-  .then(function (rows) {
-    return withRatings(rows);
-  })
-  
-  .catch(function (e) {
-    debug(e.message);
-  })
-  .finally(function () {
-    _conn.release();
-  });
+const createGame = function (options) {
+  // options { title, descr, maxPlayers, ladderId, hostId }
+  return store.insert('gameRoom', subset([ 'title', 'descr', 'maxPlayers', 'ladderId', 'hostId' ], options))
+    .then(function (q) {
+      PubSub.publish('gameRoom:created', merge(options, { id: q.insertId }))
+      return q.insertId
+    })
+    .catch(writeDebugMessage)
 }
-function getUser(id) {
-  return searchUser({ id: id }).then(function (users) {
-    return users[0];
-  });
+
+const randOf = function (arr) { return arr[ Math.floor(Math.random() * arr.length) ] }
+const pad = function (l, x) { while (x.length < l) x += '0'; return x }
+const arrayOf10 = [ 0, 0, 0, 0, 0
+                  , 0, 0, 0, 0, 0 ]
+const createSessionRecord = curry(function (roomId, playerId) { return { seskey: uuid.v4({}, new Buffer(16)), roomId: roomId, userId: playerId } })
+const startGame = function (id) {
+  let hostSession
+  return Promise.all([
+    store.update('gameRoom', { id: id }, { status: 'playing' }),
+    store.queryMany('user', { roomId: id })
+  ])
+  .then(pluck(1))
+  .then(function (players) {
+    const sessions = map(compose(createSessionRecord(id), pluck('id')), players)
+    hostSession = sessions[0]
+    return store.insertMany('gameSession', sessions)
+  })
+  .catch(writeDebugMessage)
 }
-function getUsers() {
-  return searchUser({ /* all */ '1': '1' });
-}
-function getLadders() {
-  return sql.query('SELECT * FROM ladders').catch(function (e) {
-    debug(e.message);
-  });
-}
-function getServers() {
-  return sql.query('SELECT * FROM servers').catch(function (e) {
-    debug(e.message);
-  });
-}
-function getGame(id) {
-  var _conn;
-  return sql.getConnection().then(function (conn) { _conn = conn; })
-  
-  .then(function () {
-    var s = sequence([
-      function () { return sql.query(_conn,
-                                     'SELECT ' + k(roomKeys, 'r') + ', l.name AS ladder_name ' +
-                                     'FROM rooms r, ladders l ' +
-                                     'WHERE r.id = ? AND l.id = r.ladder_id',
-                                     [ id ]);
-      },
-      function () { return sql.query(_conn,
-                                     'SELECT ' + k(userKeys) + ' ' +
-                                     'FROM users ' +
-                                     'WHERE in_room_id = ?',
-                                     [ id ]);
-      }
-    ]);
-    return s;
-  })
-  .then(function (args) {
-    var room = args[0][0], players = args[1];
-    room.players = players;
-    return room;
-  })
-  
-  .catch(function (e) {
-    debug(e.message);
-  })
-  .finally(function () {
-    _conn.release();
-  });
-}
-function getGames() {
-  var _conn;
-  return sql.getConnection().then(function (conn) { _conn = conn; })
-  
-  .then(function () {
-    var s = sequence([
-      function () { return sql.query(_conn,
-                                     'SELECT ' + k(roomKeys, 'r') + ', l.name AS ladder_name ' +
-                                     'FROM rooms r, ladders l ' +
-                                     'WHERE l.id = r.ladder_id');
-      },
-      function () { return sql.query(_conn,
-                                     'SELECT ' + k(userKeys) + ' ' +
-                                     'FROM users ' +
-                                     'WHERE in_room_id IS NOT NULL');
-      }
-    ]);
-    return s;
-  })
-  .then(function (args) {
-    var rooms = args[0], users = args[1];
-    rooms.forEach(function (room) {
-      room.players = _.where(users, { in_room_id: room.id });
-    });
-    return rooms;
-  })
-  
-  .catch(function (e) {
-    debug(e.message);
-  })
-  .finally(function () {
-    _conn.release();
-  });
-}
-function createGame(options) {
-  // options { title, desc, max_players, ladder_id, host_id, ip }
-  var _conn;
-  return sql.getConnection().then(function (conn) { _conn = conn; })
-  
-  .then(function () {
-    return sql.query(_conn, 
-                     'INSERT INTO rooms (title, descr, password, max_players, ladder_id, host_id, ip) ' +
-                     'VALUES (?, ?, ?, ?, ?, ?, ?)',
-                     [ options.title, options.descr, options.password, options.maxPlayers, options.ladder, options.host, options.ip ]);
-  })
-  .then(function (q) {
-    PubSub.publish('game-created', _.merge({ id: q.insertId }, options));
-    return q.insertId;
-  })
-  .catch(function (e) {
-    debug(e.message);
-    return false;
-  })
-  
-  .finally(function () {
-    _conn.release();
-  });
-}
-function startGame(id) {
-  var _conn, hostSession;
-  return sql.getConnection().then(function (conn) { _conn = conn; })
-  
-  .then(function () {
-    var s = sequence([
-      function () {
-        return sql.query(_conn, 'UPDATE rooms SET status = ? WHERE id = ?', [ 'playing', id ]);
-      },
-      function () { 
-        return sql.query(_conn, 'SELECT * FROM users WHERE in_room_id = ?', [ id ]);
-      }
-    ]);
-    return s;
-  })
-  .then(function (args) {
-    var sessions = args[1].map(function (player) {
-      return [ generateSeskey(), id, player.id ];
-    });
-    hostSession = sessions[0];
-    return sql.query(_conn,
-                     'INSERT INTO sessions (seskey, room_id, user_id) ' +
-                     'VALUES ' + sessions.map(function (sess) { return '(' + sql.mysql.escape(sess) + ')' }).join(', '));
-  })
-  .then(function () {
-    PubSub.publish('game-starting', id);
-    return { hostSession: hostSession };
-  })
-  .catch(function (e) {
-    debug(e.message);
-    return e;
-  })
-  
-  .finally(function () {
-    _conn.release();
-  });
-}
-function getRating(uid) {
-  var _conn;
-  return sql.getConnection().then(function (conn) { _conn = conn; })
-  
-  .then(function () {
-    return sql.query(_conn,
-                     'SELECT elo ' +
-                     'FROM ratings ' +
-                     'WHERE user_id = ?',
-                     [ uid ]);
-  })
-  .then(function (ratings) {
-    return ratings[0].elo;
-  })
-  .catch(function () {
-    debug(e.message);
-    return false;
-  })
-  
-  .finally(function () {
-    _conn.release();
-  });
-}
-function getRatings(uid) {
-  var _conn;
-  return sql.getConnection().then(function (conn) { _conn = conn; })
-  
-  .then(function () {
-    if (Array.isArray(uid)) {
-      return sql.query(_conn,
-                       'SELECT * ' +
-                       'FROM ratings ' +
-                       'WHERE user_id IN(?)',
-                       [ uid ]);
-    }
-    else {
-      return sql.query(_conn,
-                       'SELECT * ' +
-                       'FROM ratings ' +
-                       'WHERE user_id = ?',
-                       [ uid ]);
-    }
-  })
-  .catch(function () {
-    debug(e.message);
-    return false;
-  })
-  
-  .finally(function () {
-    _conn.release();
-  });
-}
-function cleanupRooms(rid) {
-  var _conn;
-  return sql.getConnection().then(function (conn) { _conn = conn; })
-  
-  .then(function () {
-    return sql.query(_conn, 
-                     'SELECT id ' +
-                     'FROM rooms ' +
-                     'WHERE id NOT IN(' +
-                       'SELECT DISTINCT in_room_id ' +
-                       'FROM users ' +
-                       'WHERE in_room_id IS NOT NULL' +
-                     ')');
-  })
-  .then(function (u) {
-    var rids = [];
-    u.forEach(function (row) {
-      rids.push(row.id);
-    });
-    if (rids.length > 0) {
-      console.log('destroying', rids);
-      PubSub.publish('room-destroyed', rids);
-      return sql.query(_conn,
-                       'DELETE FROM rooms WHERE id IN(?)',
-                       [ rids ]);
-    }
-  })
-  
-  .finally(function () {
-    _conn.release();
-  });
-}
-function joinRoom(uid, rid) {
-  var _conn;
-  return sql.getConnection().then(function (conn) { _conn = conn; })
-  
-  .then(function () {
-    return sql.query(_conn,
-                     'SELECT in_room_id ' +
+const cleanupRooms = function () {
+  return sql.query('SELECT id ' +
+                   'FROM gameRooms ' +
+                   'WHERE id NOT IN(' +
+                     'SELECT DISTINCT roomId ' +
                      'FROM users ' +
-                     'WHERE id = ?',
-                     [ uid ]);
-  })
-  .then(function (u) {
-    if (u[0].in_room_id != null) {
-      PubSub.publish('room-left', uid, u[0].in_room_id);
-    }
-  })
-  .then(function () {
-    return sql.query(_conn,
-                     'UPDATE users ' +
-                     'SET in_room_id = ? ' +
-                     'WHERE id = ?',
-                     [ rid, uid ]);
-  })
-  .then(function () {
-    process.nextTick(cleanupRooms);
-    PubSub.publish('room-joined', uid, rid);
-    return true;
-  })
-  .catch(function (e) {
-    console.log(e.stack);
-    return false;
-  })
-  
-  .finally(function () {
-    _conn.release();
-  });
+                     'WHERE roomId IS NOT NULL' +
+                   ')')
+    .then(function (u) {
+      const rids = map(pluck('id'), u)
+      if (rids.length > 0) {
+        debug('destroying', rids)
+        PubSub.publish('gameRoom:destroyed', rids)
+        return store.destroyMany('gameRoom', rids)
+      }
+    })
 }
-function leaveRoom(uid, rid) {
-  var _conn;
-  return sql.getConnection().then(function (conn) { _conn = conn; })
-  
-  .then(function () {
-    return sql.query(_conn, 'SELECT in_room_id FROM users WHERE id = ?', [ uid ]);
-  })
-  .then(function (rows) {
-    if (rows[0].in_room_id != null) {
-      PubSub.publish('room-left', uid, rows[0].in_room_id);
-      return sql.query(_conn, 'UPDATE users SET in_room_id = NULL WHERE id = ?', [ uid ]);
-    }
-  })
-  .then(function () {
-    return true;
-  })
-  .catch(function () {
-    return false;
-  })
-  
-  .finally(function () {
-    process.nextTick(cleanupRooms);
-    _conn.release();
-  });
+const joinRoom = function (uid, rid) {
+  return store.find('user', uid, [ 'roomId' ])
+    .then(function (user) {
+      if (user.roomId != null && user.roomId != rid) {
+        PubSub.publish('gameRoom:playerLeft', user.roomId, uid)
+      }
+      else if (user.roomId != rid) {
+        return store.update('user', { id: uid }, { roomId: rid }).then(function () {
+          PubSub.publish('gameRoom:playerEntered', rid, uid)
+        })
+      }
+    })
+    .then(function () { setTimeout(cleanupRooms, 0) })
+    .then(constant(true))
+    .catch(writeDebugMessage)
 }
-
-function online(uid) {
-  var _conn;
-  return sql.getConnection().then(function (conn) { _conn = conn; })
-  
-  .then(function () {
-    return sql.query(_conn, 'SELECT * FROM online WHERE user_id = ?', [ uid ]);
-  })
-  .then(function (rows) {
-    if (rows.length === 0) {
-      PubSub.publish('user-joined', uid);
-      return sql.query(_conn, 'INSERT INTO online (user_id) VALUES (?)', [ uid ]);
-    }
-  })
-  
-  .finally(function () {
-    _conn.release();
-  });
-}
-function offline(uid) {
-  var _conn;
-  return sql.getConnection().then(function (conn) { _conn = conn; })
-  
-  .then(function () {
-    return sql.query(_conn, 'DELETE FROM online WHERE user_id = ?', [ uid ]);
-  })
-  .then(function () {
-    PubSub.publish('user-left', uid);
-  })
-  
-  .finally(function () {
-    _conn.release();
-  });
-}
-function getOnlineUsers(sid) {
-  var _conn;
-  return sql.getConnection().then(function (conn) { _conn = conn; })
-  
-  .then(function () {
-    return sql.query(_conn, 'SELECT ' + k(userKeys, 'u') + ' FROM users u, online o WHERE u.id = o.user_id AND o.server_id = ?', [ sid ]);
-  })
-  .then(function (rows) {
-    return withRatings(rows);
-  })
-  
-  .catch(function (e) {
-    debug(e.message);
-  })
-  .finally(function () {
-    _conn.release();
-  });
+const leaveRoom = function (uid) {
+  let rid
+  debug('user leaving room', 'userid:', uid)
+  return store.find('user', uid, [ 'roomId' ])
+    .then(function (user) {
+      if (user.roomId != null) {
+        rid = user.roomId
+        debug('user leaving room', 'roomid:', rid)
+        PubSub.publish('gameRoom:playerLeft', user.roomId, uid)
+        return store.update('user', { id: uid }, { roomId: null })
+      }
+    })
+    .then(function () {
+      return store.find('gameRoom', rid, [ 'hostId' ])
+    })
+    .then(function (hostId) {
+      if (hostId && hostId.hostId == uid) {
+        return store.query('user', { roomId: rid }, [ 'id' ])
+          .then(function (host) {
+            return store.update('gameRoom', { id: rid }, { hostId: host.id })
+              .then(function () {
+                PubSub.publish('gameRoom:hostChanged', rid, host.id)
+              })
+          })
+      }
+    })
+    .then(constant(true))
+    .catch(writeDebugMessage)
+    .finally(cleanupRooms)
 }
 
-function getMods() {
-  return sql.query('SELECT * FROM mods').catch(function (e) {
-    debug(e.message);
-  });
+const online = function (uid) {
+  return store.queryMany('webSession', { userId: uid })
+    .then(function (res) {
+      if (res.length === 0) {
+        PubSub.publish('onlinePlayers:userJoined', uid)
+        return store.insert('webSession', { userId: uid, serverId: 1 })
+      }
+    })
+}
+const offline = function (uid) {
+  return store.query('webSession', { userId: uid }, [ 'id' ])
+    .then(pluck('id'))
+    .then(store.destroy('webSession'))
+    .then(function () { PubSub.publish('onlinePlayers:userLeft', uid) })
+}
+const getOnlineUsers = function (sid) {
+  return sql.query('SELECT u.* FROM users u, webSessions o WHERE u.id = o.userId AND o.serverId = ?', [ sid ])
+    .catch(writeDebugMessage)
 }
 
-exports.searchUser = searchUser;
-exports.getUser = getUser;
-exports.getUsers = getUsers;
-exports.getLadders = getLadders;
-exports.getServers = getServers;
-exports.getGame = getGame;
-exports.getGames = getGames;
-exports.getMods = getMods;
-exports.createGame = createGame;
-exports.startGame = startGame;
-exports.getRating = getRating;
-exports.joinRoom = joinRoom;
-exports.leaveRoom = leaveRoom;
-exports.cleanupRooms = cleanupRooms;
+exports.createGame = createGame
+exports.startGame = startGame
+exports.joinRoom = joinRoom
+exports.leaveRoom = leaveRoom
+exports.cleanupRooms = cleanupRooms
 
-exports.online = online;
-exports.offline = offline;
-exports.getOnlineUsers = getOnlineUsers;
+exports.online = online
+exports.offline = offline
+exports.getOnlineUsers = getOnlineUsers
 
-exports.withRatings = withRatings;
+exports.addRatings = addRatings
+exports.addRatingsA = addRatingsA
+exports.addPlayers = addPlayers
+exports.addPlayersA = addPlayersA

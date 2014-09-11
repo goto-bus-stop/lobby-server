@@ -1,3 +1,3 @@
 App.OnlinePlayersController = Ember.Controller.extend({
-  onlinePlayers: Ember.A()
-});
+//  onlinePlayers: Ember.A()
+})

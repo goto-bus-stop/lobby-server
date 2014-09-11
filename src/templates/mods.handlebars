@@ -6,8 +6,9 @@
         <img src="http://www.voobly.com/files/view/13816821/oh93s7zg9nqc336yp36gwxzq5vvuhqdi" alt="" class="media-object">
       {{/link-to}}
       <div class="media-body">
-        <h4 class="media-heading">{{title}}</h4>
-        {{descr}}<br>
+        <h4 class="media-heading">{{#link-to 'mod' this}}{{unbound title}}{{/link-to}}</h4>
+        by {{#link-to 'profile' author}}{{author.username}}{{/link-to}}<br>
+        {{unbound descr}}<br>
         {{#link-to 'mod-install' this class="btn btn-primary"}}<span class="fa fa-plus"></span> Install{{/link-to}}
       </div>
     </div>

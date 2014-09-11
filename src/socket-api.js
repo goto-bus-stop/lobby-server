@@ -1,277 +1,253 @@
-const PubSub = require('./PubSub'),
-      api = require('./api'),
-      signature = require('cookie-signature'),
-      cookieParser = require('cookie-parser')(),
-      config = require('./config'),
-      debug = require('debug')('socket-api'),
-      _ = require('lodash');
+'use strict'
+
+require('./fn').install(global)
+
+const PubSub = require('./PubSub')
+    , api = require('./api')
+    , signature = require('cookie-signature')
+    , cookieParser = require('cookie-parser')()
+    , config = require('../config')
+    , debug = require('debug')('aocmulti:socket-api')
+    , store = require('./store')
+    , uuid = require('node-uuid')
 
 const Errors = {
   InvalidRoomError: { type: 'error', msg: 'invalid room' }
-};
+}
 
-module.exports = function (app) {
-  const io = app.io;
-  
-  var passthruEvents = [ 'game-created', 'game-starting',
-                         'user-joined', 'user-left',
-                         'room-destroyed', 'room-joined', 'room-left' ];
-  passthruEvents.forEach(function (event) {
-    PubSub.subscribe(event, function () {
-      var args = [].slice.call(arguments, 0);
-      args.unshift(event);
-      io.emit.apply(io, args);
-    });
-  });
-  
-  // TODO use socket.io's rooms for this
-  const subscriptions = {};
-  function publishSockets(sub, cb) {
-    if (subscriptions[sub]) {
-      subscriptions[sub].forEach(cb);
-    }
-  }
-
-  PubSub.subscribe('room-left', function (uid, rid) {
-    api.getUser(uid).then(function (user) {
-      io.sockets.in('chat:' + rid).emit('chat:message:' +  rid, { uid: 0, room: rid, msg: user.username + ' left the room' });
-    });
-  });
-  PubSub.subscribe('room-joined', function (uid, rid) {
-    api.getUser(uid).then(function (user) {
-      io.sockets.in('chat:' + rid).emit('chat:message:' +  rid, { uid: 0, room: rid, msg: user.username + ' joined the room' });
-    });
-  });
-  PubSub.subscribe('user-joined', function (uid) {
-    publishSockets('online-players', function (sub) {
-      sub.socket.emit('online-players:join', uid);
-    });
-  });
-  PubSub.subscribe('user-left', function (uid) {
-    publishSockets('online-players', function (sub) {
-      sub.socket.emit('online-players:leave', uid);
-    });
-  });
-  
-  var _sockets = [];
-  PubSub.subscribe('game-ready', function (rid) {
-    io.sockets.in('room:' + rid).emit('game:launching');
-  });
-  
-  var disconnections = {};
-  io.on('connection', function (sock) {
-    // Ugh. This looks up the HTTP request of the socket connection
-    // so we can access the cookies. Obviously socket.io doesn't actually
-    // really support this so we're stuck with this ugly hack.
-    var req = sock.request;
+const cookieAuth = function (app) {
+  return function (sock, next) {
+    const req = sock.request
     // Use our newly obtained request to find our user session
     // (this was just copy-pasted from the `express-session` module)
     cookieParser(req, {}, function () {
-      var rawCookie = req.cookies.sid;
-      var unsignedCookie = (0 == rawCookie.indexOf('s:'))
+      const rawCookie = req.cookies.sid
+      const unsignedCookie = (0 == rawCookie.indexOf('s:'))
         ? signature.unsign(rawCookie.slice(2), config.cookie_secret)
-        : rawCookie;
+        : rawCookie
       app.sessionStore.get(unsignedCookie, function (err, session) {
-        if (err) throw err;
+        if (err) throw err
         if (session != null) {
-          connected(session);
+          sock.session = session
+          next()
         }
         else {
-          app.sessionStore.generate(req);
-          sock.session = req.session;
-          connected(req.session);
+          app.sessionStore.generate(req)
+          sock.session = req.session
+          next()
         }
-      });
-    });
-    
-    function connected(session) {
-      // We need to emit a ready event, because all this session stuff
-      // means that an instant api call, for example, would likely arrive before our
-      // sessions have been resolved. Try to access session.uid = BOOM!
-      // To work around that we just wrap aaaalll the socket stuff on the client side
-      // in an on('ready') event :/
-      sock.emit('ready');
-      _sockets.push(sock);
-      debug('ready');
-      
-      if (session && disconnections[session.uid]) {
-        clearTimeout(disconnections[session.uid]);
-        delete disconnections[session.uid];
+      })
+    })
+  }
+}
+
+module.exports = function (app, io) {
+  
+  const subscribers = function (x) { return io.in('subscription:' + x) }
+  const passthruEvents = [ 'gameRoom:created', 'gameRoom:starting', 'gameRoom:destroyed' ]
+  passthruEvents.forEach(function (event) {
+    PubSub.subscribe(event, function () {
+      io.emit.apply(io, concat([ event ], toArray(arguments)))
+    })
+  })
+
+  PubSub.subscribe('gameRoom:playerLeft', function (rid, uid) {
+    debug('gameRoom:playerLeft', rid, uid)
+    subscribers('gameRoom').emit('gameRoom:playerLeft', rid, uid)
+    store.find('user', uid).then(function (user) {
+      io.in('chat:' + rid).emit('chat:message:' +  rid, { uid: 0, room: rid, msg: user.username + ' left the room' })
+    })
+  })
+  PubSub.subscribe('gameRoom:playerEntered', function (rid, uid) {
+    debug('gameRoom:playerEntered', rid, uid)
+    subscribers('gameRoom').emit('gameRoom:playerEntered', rid, uid)
+    store.find('user', uid).then(function (user) {
+      io.in('chat:' + rid).emit('chat:message:' +  rid, { uid: 0, room: rid, msg: user.username + ' joined the room' })
+    })
+  })
+  PubSub.subscribe('gameRoom:hostChanged', function (rid, uid) {
+    debug('gameRoom:hostChanged', rid, uid)
+    subscribers('gameRoom').emit('gameRoom:hostChanged', rid, uid)
+    store.find('user', uid).then(function (user) {
+      io.in('chat:' + rid).emit('chat:message:' +  rid, { uid: 0, room: rid, msg: user.username + ' is now host' })
+    })
+  })
+  PubSub.subscribe('onlinePlayers:userJoined', function (uid) {
+    subscribers('onlinePlayers').emit('onlinePlayers:joined', uid)
+  })
+  PubSub.subscribe('onlinePlayers:userLeft', function (uid) {
+    subscribers('onlinePlayers').emit('onlinePlayers:left', uid)
+  })
+  
+  PubSub.subscribe('gameRoom:ready', function (rid) {
+    io.in('room:' + rid).emit('game:launching')
+  })
+  
+  var disconnections = {}
+  
+  io.use(cookieAuth(app))
+  
+  io.on('connection', function (sock) {
+    const session = sock.session
+    let loggedUser
+    if (session && session.uid) {
+      loggedUser = store.find('user', session.uid)
+    }
+    else {
+      sock.disconnect()
+    }
+
+    if (session && disconnections[session.uid]) {
+      clearTimeout(disconnections[session.uid])
+      delete disconnections[session.uid]
+    }
+    else {
+      api.online(session.uid)
+    }
+
+    sock.on('subscribe', function (channel, cb) {
+      debug('subscribing to ' + channel)
+      sock.join('subscription:' + channel)
+      cb && cb()
+    })
+    sock.on('unsubscribe', function (channel, cb) {
+      debug('unsubscribing from ' + channel)
+      sock.leave('subscription:' + channel)
+      cb && cb()
+    })
+
+    // store
+    const cleanUserRecord = compose(renameProp('roomId', 'inRoom'),
+                                    subset([ 'id', 'username', 'country', 'status', 'roomId', 'ratings' ]))
+        , cleanGameRoomRecord = compose(renameProp('playerIds', 'players'),
+                                        subset([ 'id', 'title', 'descr', 'hostId', 'ladderId', 'maxPlayers', 'serverId', 'status', 'playerIds' ]))
+        , cleanModRecord = renameProp('userId', 'author')
+    const filters = {
+      user: compose(await(cleanUserRecord),
+                    api.addRatings),
+      users: compose(await(map(cleanUserRecord)),
+                     api.addRatingsA),
+      gameRoom: compose(api.addPlayers,
+                        cleanGameRoomRecord),
+      gameRooms: compose(api.addPlayersA,
+                         map(cleanGameRoomRecord)),
+      mod: cleanModRecord,
+      mods: map(cleanModRecord)
+    }
+    const applyFilter = curry(function (type, data) {
+      return filters[type] ? filters[type](data) : data
+    })
+    sock.on('store:find', function (type, id, cb) {
+      store.find(type, id)
+        .then(applyFilter(type))
+        .nodeify(cb)
+    })
+    sock.on('store:findMany', function (type, ids, cb) {
+      store.findMany(type, ids)
+        .then(applyFilter(type + 's'))
+        .nodeify(cb)
+    })
+    sock.on('store:findAll', function (type, query, cb) {
+      store.findAll(type, query)
+        .then(applyFilter(type + 's'))
+        .nodeify(cb)
+    })
+    sock.on('store:findQuery', function (type, query, cb) {
+      store.queryMany(type, query)
+        .then(applyFilter(type + 's'))
+        .nodeify(cb)
+    })
+    sock.on('store:createRecord', function (type, record, cb) {
+      debug('createRecord', type, record)
+      store.insert(type, record)
+        .nodeify(cb)
+    })
+
+    // api calls
+    sock.on('users:me', function (cb) {
+      cb(null, session.uid)
+    })
+    sock.on('onlinePlayers:list', function (cb) {
+      api.getOnlineUsers(1)
+        .then(map(pluck('id')))
+        .nodeify(cb)
+    })
+
+    // Chat API
+    const chatDebug = require('debug')('aocmulti:socket-api:chat')
+    function roomValidate(room) {
+      return room === 'lobby' || /^\d+$/.test(room)
+    }
+    function chatSubscribe(room, cb) {
+      if (!roomValidate(room)) return cb(Errors.InvalidRoomError)
+      chatDebug('subscribing to ' + room)
+      sock.join('chat:' + room)
+      cb(null)
+    }
+    function chatSend(room, message, cb) {
+      if (!roomValidate(room)) return cb(Errors.InvalidRoomError)
+      loggedUser.then(function (u) {
+        chatDebug('sending to ' + room, message)
+        io.in('chat:' + room).emit('chat:message:' + room, { rid: room, msg: message, uid: session.uid, username: u.username, flagClassName: 'flag-icon-' + u.country })
+        cb(null)
+      })
+    }
+    function chatUnsubscribe(room, cb) {
+      if (!roomValidate(room)) return cb(Errors.InvalidRoomError)
+      chatDebug('unsubscribing from ' + room)
+      sock.leave('chat:' + room)
+      cb(null)
+    }
+    sock.on('chat:subscribe', chatSubscribe)
+    sock.on('chat:send', chatSend)
+    sock.on('chat:unsubscribe', chatUnsubscribe)
+
+    // Game API
+    sock.on('gameRoom:join', function (rid, cb) {
+      debug('gameRoom:join', rid, 'uid:' + session.uid)
+      if (session.rid == rid) {
+        cb(null, true)
       }
       else {
-        api.online(session.uid);
-      }
-      
-      sock.on('subscribe', function (channel, cb) {
-        if (!subscriptions[channel]) subscriptions[channel] = [];
-        
-        var subs = subscriptions[channel],
-            thisSub = { socket: sock, count: 0 },
-            isNew = true;
-        for (var i = 0, l = subs.length; i < l; i++) {
-          if (subs[i].socket === sock) {
-            thisSub = subs[i];
-            isNew = false;
-            break;
-          }
-        }
-        
-        thisSub.count++;
-        if (isNew) {
-          subs.push(thisSub);
-        }
-        return cb();
-      });
-      sock.on('unsubscribe', function (channel, cb) {
-        if (subscriptions[channel]) {
-          var subs = subscriptions[channel];
-          for (var i = 0, l = subs.length; i < l; i++) {
-            if (subs[i].socket === sock) {
-              subs[i].count--;
-              // remove subscription entry if there are no listeners left
-              if (subs[i].count <= 0) {
-                subs.splice(i, 1);
-              }
-              break;
-            }
-          }
-        }
-        return cb();
-      });
-      
-      // api calls
-      sock.on('api:me', function (cb) {
-        api.getUser(session.uid).then(function (me) {
-          cb(me);
-        });
-      });
-      sock.on('api:user', function (id, cb) {
-        api.getUser(id).then(function (user) {
-          cb(user);
-        });
-      });
-      sock.on('api:game', function (id, cb) {
-        api.getGame(id).then(function (game) {
-          cb(game);
-        });
-      });
-      sock.on('api:games', function (cb) {
-        api.getGames().then(function (games) {
-          cb(games);
-        });
-      });
-      sock.on('api:mods', function (cb) {
-        api.getMods().then(function (mods) {
-          cb(mods);
-        });
-      });
-      sock.on('api:online', function (cb) {
-        api.getOnlineUsers(1).then(function (users) {
-          cb(users);
-        });
-      });
-      sock.on('api:join-room', function (rid, cb) {
-        if (session.rid) {
-          sock.leave('room:' + session.rid);
-        }
         api.joinRoom(session.uid, rid)
-          .then(function (res) {
-            sock.join('room:' + rid);
-            session.rid = rid;
-            cb(res);
-          });
-      });
-      sock.on('api:leave-room', function (cb) {
-        sock.leave('room:' + session.rid);
-        api.leaveRoom(session.uid).then(cb);
-      });
-      
-      // User API
-      function userFind(id, cb) {
-        api.searchUser({ id: id })
-          .then(function (users) {
-            if (users.length > 0) {
-              cb(null, users[0]);
-            }
-            else {
-              cb(false);
-            }
-          })
-          .catch(function (err) {
-            cb(err);
-          });
+          .then(isolate(function () { session.rid = rid }))
+          .nodeify(cb)
       }
-      function userFindMany(ids, cb) {
-        userQuery({ id: ids }, cb);
+    })
+    sock.on('gameRoom:leave', function (cb) {
+      session.rid = null
+      api.leaveRoom(session.uid)
+        .nodeify(cb)
+    })
+    sock.on('gameRoom:launch', function (cb) {
+      const room = session.rid
+      io.in('room:' + room).emit('chat:message:' + room, { rid: room, msg: 'Game starting…', uid: 0 })
+      setTimeout(function () {
+        api.startGame(room)
+          .then(compose(uuid.unparse, pluck('seskey')))
+          .nodeify(cb)
+      }, 1000)
+    })
+    function _gameRoomStarting(rid) {
+      if (rid == session.rid) {
+        store.query('gameSession', { userId: session.uid }).then(function (ses) {
+          sock.emit('gameRoom:starting', uuid.unparse(ses.seskey))
+        })
       }
-      function userQuery(query, cb) {
-        api.searchUser(query)
-          .then(function (users) {
-            cb(null, users);
-          })
-          .catch(function (err) {
-            cb(err);
-          });
-      }
-      sock.on('user:find', userFind);
-      sock.on('user:find-many', userFindMany);
-      sock.on('user:query', userQuery)
-      
-      // Chat API
-      var chatDebug = require('debug')('socket-api:chat');
-      function roomValidate(room) {
-        var valid = room === 'lobby' || /^\d+$/.test(room);
-        return valid;
-      }
-      function chatSubscribe(room, cb) {
-        if (!roomValidate(room)) return cb(Errors.InvalidRoomError);
-        chatDebug('subscribing to ' + room);
-        sock.join('chat:' + room);
-        cb(null);
-      }
-      function chatSend(room, message, cb) {
-        if (!roomValidate(room)) return cb(Errors.InvalidRoomError);
-        chatDebug('sending to ' + room, message);
-        io.sockets.in('chat:' + room).emit('chat:message:' + room, { rid: room, msg: message, uid: session.uid });
-        cb(null);
-      }
-      function chatUnsubscribe(room, cb) {
-        if (!roomValidate(room)) return cb(Errors.InvalidRoomError);
-        chatDebug('unsubscribing from ' + room);
-        sock.leave('chat:' + room);
-        cb(null);
-      }
-      sock.on('chat:subscribe', chatSubscribe);
-      sock.on('chat:send', chatSend);
-      sock.on('chat:unsubscribe', chatUnsubscribe);
-      
-      // Game API
-      sock.on('game:launch', function () {
-        var room = session.rid;
-        api.startGame(room).then(function () {
-          io.sockets.in('room:' + room).emit('chat:message:' + room, { rid: room, msg: 'Game starting…', uid: 0 });
-        });
-      });
-      
-      // debug api calls
-      sock.on('debug:cleanup-rooms', function () {
-        api.cleanupRooms();
-      });
-      
-      // cleanup :D
-      sock.on('disconnect', function () {
-        function isThisSock(so) { return so !== sock }
-        _.remove(_sockets, isThisSock);
-        disconnections[session.uid] = setTimeout(function () {
-          api.offline(session.uid);
-          api.leaveRoom(session.uid);
-          PubSub.publish('user-left', session.uid);
-          for (var i in subscriptions) if (subscriptions.hasOwnProperty(i)) {
-            _.remove(subscriptions[i], isThisSock);
-          }
-        }, 5000);
-      });
     }
-  });
+    PubSub.subscribe('gameRoom:starting', _gameRoomStarting)
+
+    // debug api calls
+    sock.on('debug:cleanup-rooms', api.cleanupRooms)
+
+    // cleanup :D
+    sock.on('disconnect', function () {
+      PubSub.unsubscribe('gameRoom:starting', _gameRoomStarting)
+      disconnections[session.uid] = setTimeout(function () {
+        api.leaveRoom(session.uid)
+        api.offline(session.uid)
+      }, 5000)
+    })
+  })
   
-};
+}

@@ -1,31 +1,51 @@
 <div class="header row">
-  <div class="col-lg-6 col-md-6 col-sm-10">
+  <div class="col-lg-3 col-md-4 col-sm-10">
     <h1>Open Rooms</h1>
   </div>
-  <div class="col-lg-2 col-md-2 col-sm-2">
+  <div class="padded col-lg-4 col-md-3 hidden-sm">
+    <form class="form-horizontal">
+      <div class="form-group">
+        <label class="control-label col-lg-2">Filter:</label>
+        <div class="col-lg-10">
+          {{filter-query}}
+        </div>
+      </div>
+    </form>
+  </div>
+  <div class="padded col-lg-2 col-md-2 col-sm-2">
     <button class="btn btn-primary pull-right" type="button" data-toggle="modal" data-target="#create-game-modal">Create Game</button>
   </div>
 </div>
 <div class="row">
-  <div {{bind-attr class="renderPlayerList:col-lg-8:col-lg-12 renderPlayerList:col-md-8:col-md-12 renderPlayerList:col-sm-6:col-sm-6"}}>
-    <ul {{bind-attr class=":list-unstyled :tabular single"}}>
+  <div {{bind-attr class="renderPlayerList:col-lg-9:col-lg-12 renderPlayerList:col-md-8:col-md-12 renderPlayerList:col-sm-6:col-sm-6"}}>
+    <ul {{bind-attr class=":list-unstyled layout"}}>
       {{#each games}}
         {{view App.GameRoomSummary tagName="li"}}
+      {{else}}
+        <li><h2>No games found!</h2></li>
       {{/each}}
     </ul>
   </div>
-  {{#if renderPlayerList}}
-    <div class="col-lg-4 col-md-4 col-sm-6">
-      {{#bs-panel heading="Online Players" classNames="online-players"}}
-        {{online-players}}
-      {{/bs-panel}}
+  {{#unless single}}
+    <div class="col-lg-3 col-md-4 col-sm-6 sidebar">
+      <div class="panel panel-default online-players">
+        <div class="panel-heading">Online Players</div>
+        <div class="panel-body">
+          {{online-players}}
+        </div>
+      </div>
 
-      {{#bs-panel heading="Chat" classNames="chat"}}
-        {{chat-box room="lobby"}}
-      {{/bs-panel}}
+      <div class="panel panel-default chat">
+        <div class="panel-heading">Chat</div>
+        <div class="panel-body">
+          {{chat-box room="lobby"}}
+        </div>
+      </div>
     </div>
-  {{/if}}
+  {{/unless}}
 </div>
+
+
 <div class="modal" id="create-game-modal">
   <div class="modal-dialog">
     <div class="modal-content">

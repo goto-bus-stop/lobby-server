@@ -1,2 +1,4 @@
 node_modules
+build
 src/public/js/lib
+src/public/js/build

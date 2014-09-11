@@ -3,9 +3,10 @@
     {{view App.ChatMessageView}}
   {{/each}}
 </div>
-<div class="input-group">
-  {{view App.TextField autofocus=true context=this value=message}}
+<div class="input-group chat-input">
+  {{view App.TextField context=this value=message}}
   <span class="input-group-btn">
+    {{log this}}
     <button class="btn btn-default" type="button" {{action "sendChat"}}>Send</button>
   </span>
 </div>

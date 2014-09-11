@@ -1,1 +1,25 @@
-<h2>{{username}}</h2>
+<h1 class="page-header">{{username}}</h1>
+{{#if online}}
+  <strong class="text-success"><i class="fa fa-check-circle"></i> Online</strong>
+{{else}}
+  <strong class="text-muted"><i class="fa fa-times-circle"></i> Offline</strong>
+{{/if}}
+<div class="panel panel-default">
+  <header class="panel-heading">Ratings</header>
+  <table class="table">
+    <thead>
+      <tr> <th>Ladder</th> <th>ELO</th> <th>Wins</th> <th>Losses</th> <th>Streak</th> </tr>
+    </thead>
+    <tbody>
+      {{#each ratingsArray}}
+        <tr>
+          <td>{{ladderName ladderId}}</td>
+          <td>{{rating.elo}}</td>
+          <td>{{rating.wins}}</td>
+          <td>{{rating.losses}}</td>
+          <td>{{rating.streak}}</td>
+        </tr>
+      {{/each}}
+    </tbody>
+  </table>
+</div>

@@ -1,55 +1,86 @@
+var debugG = debug('aocmulti:route:gameRoom')
+  , Promise = Ember.RSVP.Promise
+
 App.GameRoomRoute = Ember.Route.extend({
-  beforeModel: function (transition) {
-    var params = transition.params[transition.targetName];
-    return new Ember.RSVP.Promise(function (resolve) {
-      socket.emit('api:join-room', params.room_id, resolve);
-    }).then(function (u) {
-      if (u === false) {
-        this.transitionTo('index');
-        App.notify({ type: 'error', message: 'Cannot join room #' + params.room_id });
-      }
-      return u;
-    }.bind(this));
-  },
- 
-  model: function (params) {
-    return App.GameRoom.find(params.room_id);
-  },
-  afterModel: function (room) {
-    if (room.get('locked')) {
-      return new Ember.RSVP.Promise(function (resolve, reject) {
-        App.prompt(room.get('title'), 'Password', 'password')
-          .then(
-            function okd(passw) {
-              if (passw !== /* @todo MAKE THIS. */'password') {
-                reject();
-                this.transitionTo('index');
-                App.notify({ type: 'error', message: 'Incorrect password for room #' + room.get('id') });
-              }
-              else {
-                resolve();
-              }
-            }.bind(this),
-            function cancelled() { reject() }
-          );
-      }.bind(this));
-    }
-  },
+  subscription: null
   
-  actions: {
+, model: function (params) {
+    return this.store.find('gameRoom', params.room_id)
+  }
+
+, afterModel: function (room) {
+    return new Promise(function (resolve, reject) {
+      socket.emit('gameRoom:join', room.get('id'), App.promisify(resolve, reject))
+      
+      this.set('subscription',
+        socket.subscribe('gameRoom', function () { })
+          .on('playerEntered', function () {
+            debugG('playerEntered', arguments)
+            room.reload()
+          })
+          .on('playerLeft', function () {
+            debugG('playerLeft', arguments)
+            room.reload()
+          })
+          .on('hostChanged', function () {
+            debugG('hostChanged', arguments)
+            room.reload()
+          })
+      )
+    }.bind(this))
+    
+    var reload = function () {
+      debug('reloading')
+      room.reload().then(function () {
+        room.propertyWillChange('data')
+        data = room._data;
+        room.eachRelationship(function (key, rel) {
+          debug('relationship', key)
+          if (data.players && data.players[key]) {
+            if (rel.options.async) {
+              room._relationships[key] = null
+            }
+          }
+        })
+        room.propertyDidChange('data')
+        // reload all players >_<
+//        return room.get('players').then(function (players) {
+//          return Promise.all([ players.invoke('reload') ])
+//        })
+      })
+    }
+    
+    if (room.get('locked')) {
+      return App.prompt(room.get('title'), 'Password', 'password')
+        .then(function OKed(passw) {
+          if (passw !== /* @todo MAKE THIS. */'password') {
+            throw new Error('Incorrect password for room #' + room.get('id'))
+          }
+        }, function (e) {
+          this.transitionTo('index')
+          App.notify({ type: 'error', message: e.message })
+        }.bind(this))
+    }
+    debugG('afterPromise')
+    debugG('players right afterPromise', room.get('players').mapBy('id'))
+    return new Promise(function(res){res()})
+  }
+
+, actions: {
     willTransition: function () {
-      socket.emit('api:leave-room', function () {});
-    },
-    leave: function () {
-      this.transitionTo('index');
-    },
-    openSidebar: function () {
+      socket.emit('gameRoom:leave', function () {})
+      this.get('subscription').terminate()
+    }
+  , leave: function () {
+      this.transitionTo('index')
+    }
+  , openSidebar: function () {
       this.render('index', {
         into: 'application',
         outlet: 'sidebar',
         controller: 'gameList'
-      });
-      App.set('sidebarOpen', true);
+      })
+      App.set('sidebarOpen', true)
     }
   }
-});
+})

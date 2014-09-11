@@ -7,7 +7,8 @@
   },
   "cookie_secret": "our_top_secret_key",
   "base_url": "/",
-  "port": 3020,
+  "port": 23649,
+  "socket": true,
   "redis": {
     "host": "127.0.0.1",
     "port": 6379,

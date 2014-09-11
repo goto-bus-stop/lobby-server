@@ -1,0 +1,13 @@
+var get = Ember.get
+
+App.LadderRoute = Ember.Route.extend({
+  model: function (params) {
+    return { ladder: App.get('ladders').findBy('id', parseInt(params.ladder_id, 10)) }
+  }
+//, setupController: function (controller, model) {
+//    controller.set('currentLadder', get(model, 'ladder.id'))
+//    this.store.find('user').then(function (players) {
+//      controller.set('content', players)
+//    })
+//  }
+})

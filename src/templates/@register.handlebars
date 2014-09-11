@@ -1,0 +1,66 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge;">
+    <title>AoCMulti</title>
+    <link rel="stylesheet" href="{{config.base_url}}style/font-awesome/css/font-awesome.css">
+    <link rel="stylesheet" href="{{config.base_url}}style/style.css">
+    <link rel="stylesheet" href="http://localhost/apache/flag-icon-css/css/flag-icon.css">
+    <link rel="stylesheet" href="{{config.base_url}}js/lib/select2/select2.css">
+    <link rel="stylesheet" href="{{config.base_url}}js/lib/select2/select2-bootstrap.css">
+  </head>
+  <body>
+    <form class="form-horizontal" action="{{config.base_url}}" method="post">
+      <main class="modal" style="display:block">
+        <div class="modal-dialog">
+          <div class="modal-content">
+            <header class="modal-header">
+              <h1 class="modal-title">AoCMulti Registration</h1>
+            </header>
+            <div class="modal-body">
+              <div class="form-group">
+                <label for="username" class="col-sm-3 control-label">Username</label>
+                <div class="col-sm-9">
+                  <input type="text" name="username" id="username" class="form-control" placeholder="Username" autofocus>
+                </div>
+              </div>
+              <div class="form-group">
+                <label for="password" class="col-sm-3 control-label">Password</label>
+                <div class="col-sm-9">
+                  <input type="password" name="password" id="password" class="form-control" placeholder="Password">
+                </div>
+              </div>
+              <div class="form-group">
+                <label for="country" class="col-sm-3 control-label">Country</label>
+                <div class="col-sm-9">
+                  <select name="country" id="country" class="form-control">
+                    {{#each countries}}
+                      <option value="{{code}}">{{name}}</option>
+                    {{/each}}
+                  </select>
+                </div>
+              </div>
+            </div>
+            <footer class="modal-footer">
+              <button type="submit" class="btn btn-primary">Log in</button>
+            </footer>
+          </div>
+        </div>
+      </main>
+    </form>
+    <script src="{{config.base_url}}js/lib/jquery/dist/jquery.js"></script>
+    <script src="{{config.base_url}}js/lib/select2/select2.js"></script>
+    <script>
+      function f(s) {
+        console.log(s)
+        return '<i class="flag-icon flag-icon-' + s.id + '"></i> ' + s.text;
+      }
+      $('#country').select2({
+        formatResult: f, formatSelection: f, 
+        placeholder: 'Country',
+        allowClear: true
+      })
+    </script>
+  </body>
+</html>

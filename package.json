@@ -14,17 +14,26 @@
     "less-middleware": "",
     "socket.io": "1.x",
     "mysql": "2.x",
-    "when": "",
     "lodash": "",
     "handlebars": "~1.3",
     "debug": "~0.8",
     "passport": "~0.2",
     "passport-local": "1.x",
     "bcryptjs": "1.x",
-    "glob": ""
+    "glob": "",
+    "curry": "1.x",
+    "promise": "5.x",
+    "lenses": "0.x",
+    "lru-cache": "^2.5.0",
+    "lambdajs": "^1.0.1",
+    "node-uuid": "^1.4.1"
   },
   "devDependencies": {
     "gulp": "^3.6.2",
-    "gulp-concat": "^2.2.0"
+    "gulp-concat": "^2.2.0",
+    "gulp-wrap": "^0.3.0",
+    "faker": "^1.1.0",
+    "gulp-uglify": "^0.3.2",
+    "gulp-rename": "^1.2.0"
   }
 }

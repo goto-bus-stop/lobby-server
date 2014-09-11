@@ -13,6 +13,7 @@
       <li>{{#link-to 'index'}}Lobby Browser{{/link-to}}</li>
       <li>{{#link-to 'mods'}}Mod Center{{/link-to}}</li>
       <li>{{#link-to 'profile' App.user.id}}Profile{{/link-to}}</li>
+      <li>{{#link-to 'ladder' App.settings.defaultLadder}}Ladder{{/link-to}}</li>
     </ul>
     <div class="col-sm-3 col-md-3 pull-right">
       <form class="navbar-form" role="search">
@@ -27,10 +28,18 @@
   </div>
 </div>
 <div {{bind-attr class="sidebarOpen:sidebar-open :wrap"}}>
-  <div class="sidebar">
+  <div class="app-sidebar">
     {{outlet sidebar}}
   </div>
   <div {{bind-attr class=":container-fluid :application currentRouteName"}}>
     {{outlet}}
   </div>
 </div>
+
+<ul class="dropdown-menu" id="context-menu">
+  <li><a href="#">Menu Item</a></li>
+  <li><a href="#">Menu Item</a></li>
+  <li><a href="#">Menu Item</a></li>
+  <li><a href="#">Menu Item</a></li>
+  <li><a href="#">Menu Item</a></li>
+</ul>

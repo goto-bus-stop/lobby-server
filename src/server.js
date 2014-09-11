@@ -1,101 +1,105 @@
-const debug = require('debug')('server');
+const debug = require('debug')('aocmulti:server')
 
 // require() debug
-var _r = require;
+const _r = require
 require = function (path) {
-  debug('require', path);
-  return _r(path);
-};
+  debug('require', path)
+  return _r(path)
+}
 
-debug('starting');
+debug('starting')
 
-const http = require('http'),
-      path = require('path'),
-      fs = require('fs');
+require('./fn').install(global)
+
+const http = require('http')
+    , path = require('path')
+    , fs = require('fs')
 
 // Web site stuff
-const express = require('express'),
-      cookieParser = require('cookie-parser'),
-      bodyParser = require('body-parser'),
-      session = require('express-session'),
-      csurf = require('csurf'),
-      logger = require('morgan'),
-      lessMiddleware = require('less-middleware'),
-      pp = require('passport');
+    , express = require('express')
+    , cookieParser = require('cookie-parser')
+    , bodyParser = require('body-parser')
+    , session = require('express-session')
+    , csurf = require('csurf')
+    , logger = require('morgan')
+    , lessMiddleware = require('less-middleware')
+    , pp = require('passport')
 
-// Library stuff
-const when = require('when'),
-      sequence = require('when/sequence');
-const _ = require('lodash');
-const socketio = require('socket.io');
-
-const sql = require('./sql');
-const api = require('./api');
-const config = require('./config');
+    , sql = require('./sql')
+    , api = require('./api')
+    , config = require('../config')
 
 // set up Handlebars helpers
-const Handlebars = require('handlebars');
-require('./handlebars-helpers')(Handlebars);
+const Handlebars = require('handlebars')
+require('./handlebars-helpers')(Handlebars)
 
-require('./passport')(pp);
+// set up auth
+require('./passport')(pp)
 
 // App setup
-const app = express();
+const app = express()
 
-app.disable('x-powered-by');
+// meh
+app.disable('x-powered-by')
 
-if (config.env === 'production') {
-  const RedisStore = require('connect-redis')(session);
-  app.sessionStore = new RedisStore(config.redis);
+if (true|| config.env === 'production') {
+  const RedisStore = require('connect-redis')(session)
+  app.sessionStore = new RedisStore(config.redis)
 }
 else {
-  app.sessionStore = new session.MemoryStore();
+  app.sessionStore = new session.MemoryStore()
 }
 
-app.passport = pp;
+app.passport = pp
 
-//app.use(logger());
-app.use(cookieParser());
-app.use(bodyParser());
-app.use(session({ secret: config.cookie_secret, key: 'sid', store: app.sessionStore }));
-app.use(pp.initialize());
-app.use(pp.session());
-app.use(lessMiddleware(__dirname + '/public', { debug: config.env === 'development' }));
-app.use(express.static(__dirname + '/public'));
+//app.use(logger())
+app.use(cookieParser())
+app.use(bodyParser.urlencoded({ extended: true }))
+app.use(session({
+  secret: config.cookie_secret
+, key: 'sid'
+, store: app.sessionStore
+, resave: true
+, saveUninitialized: true
+}))
+app.use(lessMiddleware(__dirname + '/public'))
+
+app.use(pp.initialize())
+app.use(pp.session())
 
 // View stuff
-Handlebars.registerHelper('template', function (n) {
-  return fs.readFileSync(path.join(__dirname, 'templates', n + '.handlebars'), { encoding: 'utf8' });
-});
 app.engine('handlebars', function (view, options, callback) {
   fs.readFile(view, { encoding: 'utf8' }, function (err, hbs) {
-    if (err) return callback(err);
-    callback(null, Handlebars.compile(hbs)(options));
-  });
-});
-app.set('view engine', 'handlebars');
-app.set('views', path.join(__dirname, 'templates'));
-app.locals.config = config;
+    if (err) return callback(err)
+    callback(null, Handlebars.compile(hbs)(options))
+  })
+})
+app.set('view engine', 'handlebars')
+app.set('views', path.join(__dirname, 'templates'))
+app.locals.config = config
 
-require('./routes/index')(app);
+app.use(require('./routes/index')())
+app.use(require('./routes/register')())
 
 // Web App API
-app.use('/api', require('./routes/web-api')(express.Router()));
+app.use('/api', require('./routes/web-api')())
 // Client API
-app.use('/_CLIENT', require('./routes/client-api')(express.Router()));
+app.use('/client', require('./routes/client-api')())
 
-const server = http.createServer(app);
-app.io = socketio(server);
+// static
+app.use(express.static(__dirname + '/public'))
 
-require('./socket-api')(app);
+const server = http.createServer(app)
+if (config.socket) {
+  const io = require('socket.io')(server)
+  require('./socket-api')(app, io)
+}
 
 server.listen(config.port, function () {
-  console.log('Listening on port %d', server.address().port);
-});
-
-const User = require('./models/User');
-User.create({ id: 0 });
+  console.log('Listening on port %d', server.address().port)
+  debug('memusage: ' + (process.memoryUsage().rss / 1024 / 1024).toPrecision(4) + 'MB')
+})
 
 setInterval(function () {
-  debug('memusage: ' + JSON.stringify(process.memoryUsage()));
-}, 30000);
+  debug('memusage: ' + (process.memoryUsage().rss / 1024 / 1024).toPrecision(4) + 'MB')
+}, 30000)
