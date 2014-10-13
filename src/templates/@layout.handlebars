@@ -17,7 +17,7 @@
       window.DEBUG_ON = true
 
       var require = {
-        baseUrl: '{{config.base_url}}js/build/amd'
+        baseUrl: '{{config.base_url}}js'
       , shim: {
           'jquery': { exports: 'jQuery' }
         , 'handlebars': { exports: 'Handlebars' }
@@ -32,15 +32,15 @@
         , 'bootstrap': { deps: [ 'jquery' ] }
         }
       , paths: {
-          'debug': '../../lib/debug/dist/debug'
-        , 'jquery': '../../lib/jquery/dist/jquery'
-        , 'bootstrap': '../../lib/bootstrap/dist/js/bootstrap'
-        , 'handlebars': '../../lib/handlebars/handlebars'
-        , 'moment': '../../lib/moment/moment'
-        , 'ember': '../../lib/ember/ember'
-        , 'ember-data': '../../lib/ember-data/ember-data'
-        , 'lodash': '../../lib/lodash/dist/lodash'
-        , 'socket.io': '../../../socket.io/socket.io.js'
+          'debug': 'lib/debug/dist/debug'
+        , 'jquery': 'lib/jquery/dist/jquery'
+        , 'bootstrap': 'lib/bootstrap/dist/js/bootstrap'
+        , 'handlebars': 'lib/handlebars/handlebars'
+        , 'moment': 'lib/moment/moment'
+        , 'ember': 'lib/ember/ember'
+        , 'ember-data': 'lib/ember-data/ember-data'
+        , 'lodash': 'lib/lodash/dist/lodash'
+        , 'socket.io': '../socket.io/socket.io.js'
         }
       }
     </script>
