@@ -1,14 +1,14 @@
-var debugA = debug('aocmulti:route:application')
-  , Promise = Ember.RSVP.Promise
+var Ember = require('ember')
+  , debug = require('debug')('aocmulti:route:application')
 
-App.ApplicationRoute = Ember.Route.extend({
+var Promise = Ember.RSVP.Promise
+
+module.exports = Ember.Route.extend({
   
   addLadders: function () {
     if (window.__ladders) {
-      debugA('adding ladders')
-      App.get('ladders').pushObjects(__ladders.map(function (l) { 
-        return App.Ladder.create(l)
-      }))
+      debug('adding ladders')
+      App.get('ladders').pushObjects(__ladders.map(l => App.Ladder.create(l)))
     }
   }.on('init')
   
@@ -17,13 +17,13 @@ App.ApplicationRoute = Ember.Route.extend({
     
     return new Promise(function (resolve, reject) {
       socket.emit('users:me', App.promisify(resolve, reject))
-    }).then(function (id) {
-      return store.find('user', id)
-    }).then(function (user) {
-      debugA('found', user)
-      App.set('user', user)
-      return user
     })
+      .then(id => store.find('user', id))
+      .then(function (user) {
+        debug('found', user)
+        App.set('user', user)
+        return user
+      })
   }
 
 })

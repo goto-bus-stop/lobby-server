@@ -1,10 +1,12 @@
+var DS = require('ember-data')
+
 var attr = DS.attr
 
-App.User = DS.Model.extend({
+module.exports = DS.Model.extend({
   username: attr('string')
 , country: attr('string')
 , status: attr('string')
-, inRoom: DS.belongsTo('gameRoom')
+, inRoom: DS.belongsTo('room')
 , ratings: attr()
 
   // properties

@@ -1,3 +1,5 @@
-App.TextArea = Ember.TextArea.extend({
+var Ember = require('ember')
+
+module.exports = Ember.TextArea.extend({
   classNames: [ 'form-control' ]
 })

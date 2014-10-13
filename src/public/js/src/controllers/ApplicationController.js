@@ -1,6 +1,6 @@
-var debugA = debug('aocmulti:controller:application')
+var debug = require('debug')('aocmulti:controller:application')
 
-App.ApplicationController = Ember.Controller.extend({
+module.exports = require('ember').Controller.extend({
   pageClassBinding: 'App.page'
 , sidebarOpenBinding: 'App.sidebarOpen'
 })

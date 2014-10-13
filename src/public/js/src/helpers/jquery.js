@@ -1,3 +1,5 @@
+var jQuery = require('jquery')
+
 jQuery.Element = function (selector) {
   var tag = selector.match(/^\w+/)
     , element = jQuery('<' + (tag ? tag[0] : 'div') + '>')

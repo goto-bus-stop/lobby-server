@@ -1,6 +1,7 @@
-var debugU = debug('aocmulti:controller:userItem')
+var Ember = require('ember')
+  , debug = require('debug')('aocmulti:controller:userItem')
 
-App.UserItemController = Ember.ObjectController.extend({
+module.exports = Ember.ObjectController.extend({
   needs: [ 'settings' ]
   
 , defaultRating: function () {
@@ -8,4 +9,5 @@ App.UserItemController = Ember.ObjectController.extend({
       , defaultLadder = this.get('controllers.settings.defaultLadder')
     return ratings && ratings[defaultLadder]
   }.property('controllers.settings.defaultLadder', 'content.ratings')
+
 })

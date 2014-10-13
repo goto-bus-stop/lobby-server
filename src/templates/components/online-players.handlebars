@@ -1,3 +1,5 @@
-{{#each onlinePlayers}}
-  {{view "user-item" tagName="li"}}
-{{/each}}
+<ul>
+  {{#each onlinePlayers}}
+    {{view "user-item" ladder=1 tagName="li"}}
+  {{/each}}
+</ul>

@@ -13,6 +13,8 @@ Promise.prototype.finally = function (fn) {
 Promise.prototype.spread = function (cb) {
   return this.then(function (arr) { return cb.apply(this, arr) })
 }
-Promise.prototype.map = Promise.prototype.then
+Promise.prototype.map = function (a, b, c) {
+  return this.then(a, b, c)
+}
 
 module.exports = Promise

@@ -3,13 +3,14 @@
   "private": true,
   "dependencies": {
     "jquery": "1.x",
-    "ember": "~1.5",
-    "ember-data": "1.0.0-beta.7",
-    "handlebars": "~1.3",
+    "ember": "1.x",
+    "ember-data": "1.0.0-beta.9",
+    "handlebars": "1.x",
     "moment": "2.x",
     "bootstrap": "3.x",
     "es5-shim": "3.x",
     "lodash": "2.x",
-    "select2": "3.x"
+    "select2": "3.x",
+    "requirejs": "~2.1.15"
   }
 }

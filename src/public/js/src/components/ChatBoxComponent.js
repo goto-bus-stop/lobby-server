@@ -1,7 +1,9 @@
-var debugC = debug('aocmulti:component:chat-box')
+var Ember = require('ember')
+  , debug = require('debug')('aocmulti:component:chat-box')
+  , ChatMessage = require('models/ChatMessage')
 
-App.ChatBoxComponent = Ember.Component.extend({
-  classNames: 'chat-box'
+module.exports = Ember.Component.extend({
+  classNames: [ 'component', 'chat-box' ]
   
 , message: ''
 , messages: []
@@ -11,11 +13,11 @@ App.ChatBoxComponent = Ember.Component.extend({
 , onMessage: function (data) {
     var messageDiv = this.$('.chat-messages')
       , isScrolled = messageDiv.prop('scrollHeight') - messageDiv.height() === messageDiv.scrollTop()
-    this.get('messages').pushObject(App.ChatMessage.create(data))
+    this.get('messages').pushObject(ChatMessage.create(data))
     
     Ember.run(function () {
       Ember.run.schedule('afterRender', function () {
-        debugC('isScrolled', isScrolled, messageDiv.prop('scrollHeight'), messageDiv.height(), messageDiv.scrollTop())
+        debug('isScrolled', isScrolled, messageDiv.prop('scrollHeight'), messageDiv.height(), messageDiv.scrollTop())
         if (isScrolled) {
           messageDiv.scrollTop(messageDiv.prop('scrollHeight'))
         }

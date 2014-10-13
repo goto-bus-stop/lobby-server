@@ -68,11 +68,9 @@ const createGame = function (options) {
     .catch(writeDebugMessage)
 }
 
-const randOf = function (arr) { return arr[ Math.floor(Math.random() * arr.length) ] }
-const pad = function (l, x) { while (x.length < l) x += '0'; return x }
-const arrayOf10 = [ 0, 0, 0, 0, 0
-                  , 0, 0, 0, 0, 0 ]
-const createSessionRecord = curry(function (roomId, playerId) { return { seskey: uuid.v4({}, new Buffer(16)), roomId: roomId, userId: playerId } })
+const createSessionRecord = curry(function (roomId, playerId) {
+  return { seskey: uuid.v4({}, new Buffer(16)), roomId: roomId, userId: playerId }
+})
 const startGame = function (id) {
   let hostSession
   return Promise.all([
@@ -82,8 +80,8 @@ const startGame = function (id) {
   .then(pluck(1))
   .then(function (players) {
     const sessions = map(compose(createSessionRecord(id), pluck('id')), players)
-    hostSession = sessions[0]
     return store.insertMany('gameSession', sessions)
+      .then(constant(sessions))
   })
   .catch(writeDebugMessage)
 }

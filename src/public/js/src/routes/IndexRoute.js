@@ -1,21 +1,31 @@
-var get = Ember.get
-  , debugI = debug('aocmulti:route:index')
+var Ember = require('ember')
+  , debug = require('debug')('aocmulti:route:index')
 
-App.IndexRoute = Ember.Route.extend({
+var get = Ember.get
+
+module.exports = Ember.Route.extend({
   setupController: function (controller) {
-    this.store.find('gameRoom').then(function (games) {
+    this.store.find('room').then(function (games) {
       controller.set('games', games)
     })
 
     socket.subscribe('gameRoom')
-      .on('created', function (room) { controller.get('games').pushObject(room) })
+      .on('created', function (room) {
+        controller.get('games').pushObject(room)
+      })
       .on('destroyed', function (roomIds) {
         var l = roomIds.length
-        controller.set('games', controller.get('games').reject(function (room) {
-          var roomId = get(room, 'id'), i
-          for (i = 0; i < l; i++) if (roomId == roomIds[i]) return true
+        var games = controller.get('games').reject(function (room) {
+          var roomId = get(room, 'id')
+            , i
+          for (i = 0; i < l; i++) {
+            if (roomId == roomIds[i]) {
+              return true
+            }
+          }
           return false
-        }))
+        })
+        controller.set('games', games)
       })
   }
   
@@ -34,12 +44,12 @@ App.IndexRoute = Ember.Route.extend({
         return
       }
       this.set('sendingRequest', true)
-      var record = this.store.createRecord('gameRoom', options)
+      var record = this.store.createRecord('room', options)
       record.save()
         .then(function (x) {
           $('#create-game-modal').modal('hide')
           this.set('sendingRequest', false)
-          this.transitionTo('game-room', record.get('id'))
+          this.transitionTo('room', record.get('id'))
         }.bind(this))
         .catch(function (e) {
           throw e

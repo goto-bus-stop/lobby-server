@@ -1,4 +1,9 @@
-@import "bootstrap/bootstrap.less";
+@import "lib/bootstrap/bootstrap.less";
+@import "lib/font-awesome/less/font-awesome.less";
+@fa-font-path: "./lib/font-awesome/fonts";
+
+@import "components/chat-box.less";
+@import "components/online-players.less";
 
 body {
   padding-top: @navbar-height;
@@ -8,10 +13,7 @@ body {
 }
 
 .index {
-  .online-players {
-    ul { margin-bottom: 0; }
-  }
-  
+
   .header {
     div.padded { padding-top: 22px; }
     .form-group { margin-bottom: 0; }
@@ -28,7 +30,7 @@ body {
       margin: 0;
       height: 50%;
     }
-    .online-players {
+    .online-players-panel {
       border-bottom: 0;
     }
     
@@ -118,27 +120,6 @@ body {
 //      content: "\f007";
 //    }
 //  }
-}
-
-.chat-box {
-  position: relative;
-
-  .message {
-    &.system {
-      font-style: italic;
-      color: #777;
-    }
-
-    .username {
-      font-weight: bold;
-    }
-
-    time {
-      font-size: 75%;
-      color: #777;
-      float: right;
-    }
-  }
 }
 
 @sidebar-width: 350px;

@@ -1,10 +1,11 @@
+var DS = require('ember-data')
+  , debug = require('debug')('aocmulti:model:room')
+
 var attr = DS.attr
   , belongsTo = DS.belongsTo
   , hasMany = DS.hasMany
-  , debugG = debug('aocmulti:model:gameRoom')
-  , get = Ember.get
 
-App.GameRoom = DS.Model.extend({
+module.exports = DS.Model.extend({
   title: attr('string')
 , descr: attr('string')
 , maxPlayers: attr('number')

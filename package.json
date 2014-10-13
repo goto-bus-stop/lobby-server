@@ -21,12 +21,12 @@
     "passport-local": "1.x",
     "bcryptjs": "1.x",
     "glob": "",
-    "curry": "1.x",
     "promise": "5.x",
     "lenses": "0.x",
     "lru-cache": "^2.5.0",
-    "lambdajs": "^1.0.1",
-    "node-uuid": "^1.4.1"
+    "node-uuid": "^1.4.1",
+    "prelude-ls": "^1.1.1",
+    "qs": "^2.2.3"
   },
   "devDependencies": {
     "gulp": "^3.6.2",
@@ -34,6 +34,12 @@
     "gulp-wrap": "^0.3.0",
     "faker": "^1.1.0",
     "gulp-uglify": "^0.3.2",
-    "gulp-rename": "^1.2.0"
+    "gulp-rename": "^1.2.0",
+    "amd-optimize": "^0.2.5",
+    "gulp-esnext": "^1.2.0"
+  },
+  "dependencies?": {
+    "curry": "1.x",
+    "lambdajs": "^1.0.1"
   }
 }

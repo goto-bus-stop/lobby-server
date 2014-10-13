@@ -1,10 +1,67 @@
-var debugA = debug('aocmulti:app')
-  , debugS = debug('aocmulti:socket')
+var Ember = require('ember')
+  , $ = require('jquery')
+  , debug = require('debug')('aocmulti:app')
+  , Socket = require('socket/Socket')
+
+require('helpers/jquery')
+require('helpers/helpers')
 
 var App = window.App = Ember.Application.create({
   LOG_TRANSITIONS: true          // basic logging of successful transitions
 , LOG_TRANSITIONS_INTERNAL: true // detailed logging of all routing steps
+
+, run: function () {
+    this.advanceReadiness()
+  }
+
+, Router: require('router')
+
+, ApplicationAdapter: require('adapters/ApplicationAdapter')
+
+, User: require('models/User')
+, Room: require('models/Room')
+, Mod: require('models/Mod')
+, Ladder: require('models/Ladder')
+, ChatMessage: require('models/ChatMessage')
+
+, ApplicationController: require('controllers/ApplicationController')
+, ChatBoxController: require('controllers/ChatBoxController')
+, GameListController: require('controllers/GameListController')
+, IndexController: require('controllers/IndexController')
+, LadderController: require('controllers/LadderController')
+, ModsController: require('controllers/ModsController')
+, OnlinePlayersController: require('controllers/OnlinePlayersController')
+, RoomController: require('controllers/RoomController')
+, SettingsController: require('controllers/SettingsController')
+, UserItemController: require('controllers/UserItemController')
+
+, ApplicationRoute: require('routes/ApplicationRoute')
+, IndexRoute: require('routes/IndexRoute')
+, LadderRoute: require('routes/LadderRoute')
+, ModsRoute: require('routes/ModsRoute')
+, RoomRoute: require('routes/RoomRoute')
+
+, ChatMessageView: require('views/ChatMessageView')
+, NumberField: require('views/NumberField')
+, RoomSummary: require('views/RoomSummary')
+, RoomView: require('views/RoomView')
+, Select: require('views/Select')
+, TextArea: require('views/TextArea')
+, TextField: require('views/TextField')
+, UserItemView: require('views/UserItemView')
+, UsernameView: require('views/UsernameView')
+, UserTooltipView: require('views/UserTooltipView')
+
+, ChatBoxComponent: require('components/ChatBoxComponent')
+, FilterQueryComponent: require('components/FilterQueryComponent')
+, OnlinePlayersComponent: require('components/OnlinePlayersComponent')
+
 })
+
+module.exports = App
+
+App.deferReadiness()
+
 App.set('ladders', [])
 
 App.initializer({
@@ -22,7 +79,7 @@ App.reopen({
   // current page
   page: 'application'
 , sidebarOpen: false
-  
+
   // some sound management
 , soundsCache: {}
 , playSound: function (s) {
@@ -67,9 +124,9 @@ App.reopen({
     console[o.type === 'error' ? 'error' : 'log'](o.message)
   }
   
-, DPRun: function (x) {
-    debugA('DPRun', x)
-    var iframe = $.Element('iframe.hide').attr('src', App.PROTOCOL + '://' + x)
+, DPRun: function (key) {
+    debug('DPRun', key)
+    var iframe = $.Element('iframe.hide').attr('src', App.PROTOCOL + '://' + key)
     iframe.appendTo('body')
     iframe.on('load', function () { iframe.remove() })
   }
@@ -82,113 +139,15 @@ App.reopen({
   }
 })
 
-// These things are going to be customizable at some point
-App.SettingsController = Ember.Controller.extend({
-  defaultLadder: 1
-})
-
-var Subscription = Ember.Object.extend({
-  sock: null
-, channel: null
-, evts: []
-, subscribed: function () { debugS('default subscribed callback') }
-, terminated: function () { debugS('default termination callback') }
-  
-, init: function () {
-    debugS('subscribing to ', this.get('channel'))
-//    this.get('sock').emit('subscribe', this.get('channel'), this.onSubscribed.bind(this))
-  }
-, on: function (evt, cb) {
-    debugS('subscription ' + this.get('channel') + ' event', evt)
-    this.get('evts').push([ evt, cb ])
-    this.get('sock').on(this.get('channel') + ':' + evt, cb)
-    return this
-  }
-, off: function (evt, cb) {
-    debugS('subscription ' + this.get('channel') + ' event removal', evt)
-    var evts = this.get('evts')
-      , i = evts.length
-    while (i--) {
-      if (evts[i][0] === evt && (!cb || evts[i][1] === cb)) {
-        evts.splice(i, 1)
-      }
-    }
-    this.get('sock').off(this.get('channel') + ':' + evt, cb)
-  }
-, onSubscribed: function () {
-    debugS('subscribed to ', this.get('channel'))
-    var sub = this.get('subscribed')
-    sub && sub()
-  }
-, terminate: function (cb) {
-    debugS('subscription termination', this.get('channel'))
-    var channel = this.get('channel')
-      , sock = this.get('sock')
-    this.get('evts').forEach(function (evt) {
-      sock.off(channel + ':' + evt[0], evt[1])
-    }, this)
-    var term = this.get('terminated')
-    term && term()
-  }
-})
-App.Socket = Ember.Object.extend(Ember.Evented, {
-  sock: null
-, subscriptions: {}
-  
-, connect: function () {
-    this.set('sock', io.connect(this.get('url')))
-  }
-  
-, emit: function () {
-    var sock = this.get('sock')
-    sock.emit.apply(sock, arguments)
-    return this
-  }
-, on: function () {
-    var sock = this.get('sock')
-    sock.on.apply(sock, arguments)
-    return this
-  }
-, off: function () {
-    var sock = this.get('sock')
-    sock.off.apply(sock, arguments)
-    return this
-  }
-  
-, subscribe: function (channel, subCb) {
-    var subscriptions = this.get('subscriptions')
-      , sock = this.get('sock')
-      , subscription = Subscription.create({
-          sock: sock
-        , channel: channel
-        , subscribed: subCb || Ember.K
-        , terminated: function () {
-            if (--subscriptions[channel] <= 0) {
-              sock.emit('unsubscribe', channel)
-            }
-          }
-        })
-    if (!subscriptions[channel]) {
-      subscriptions[channel] = 1
-      sock.emit('subscribe', channel, subscription.onSubscribed.bind(subscription))
-    }
-    else {
-      subscriptions[channel]++
-      subscription.onSubscribed()
-    }
-    return subscription
-  }
-})
-
 // socket.io
-var socket = window.socket = App.Socket.create({ url: 'http://' + location.hostname + ':' + location.port })
+var socket = window.socket = Socket.create({ url: 'http://' + location.hostname + ':' + location.port })
 socket.connect()
 
 socket.on('error', function (e) {
-  debugS(e.stack, e.description.stack)
+  debug('socket', e.stack, e.description.stack)
 })
 
-setInterval(function reloadStyles() {
+false && setInterval(function reloadStyles() {
   var s = document.getElementById('mainStyle')
     , ns = document.createElement('link')
   ns.type = 'text/css'

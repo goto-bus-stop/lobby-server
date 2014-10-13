@@ -8,9 +8,9 @@ const api = require('./api')
     , fn = require('./fn')
     , store = require('./store')
     , userCache = require('lru-cache')({
-      max: 200,
-      maxAge: 1000 * 65
-    })
+        max: 200,
+        maxAge: 1000 * 65
+      })
 
 const _authError = 'Username/Password combination not found'
 const comparePassword = Promise.denodeify(bcrypt.compare)
@@ -25,7 +25,7 @@ const findUser = function (id) {
 module.exports = function (pp) {
   pp.serializeUser(function (user, done) { done(null, user.id) })
   pp.deserializeUser(function (id, done) { findUser(id).nodeify(done) })
-  
+
   pp.use(new LocalStrategy(function (username, password, done) {
     store.query('user', { username: username })
       .then(function (user) {

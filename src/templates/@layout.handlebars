@@ -4,16 +4,45 @@
     <meta charset="utf-8">
     <meta http-equiv="X-UA-Compatible" content="IE=edge;">
     <title>AoCMulti</title>
-    <link rel="stylesheet" href="{{config.base_url}}style/font-awesome/css/font-awesome.css">
     <link rel="stylesheet" href="http://localhost:8000/flag-icon-css/css/flag-icon.css">
     <link rel="stylesheet" id="mainStyle" href="{{config.base_url}}style/style.css">
   </head>
   <body>
     <script>
-      var __ladders = {{json ladders}},
-          __servers = {{json servers}};
-      onerror=function(e){console.error(e.stack||e.message||e)}
-      window.DEBUG_ON = true;
+      var __ladders = {{json ladders}}
+        , __servers = {{json servers}}
+      onerror = function (e) {
+        console.error(e.stack || e.message || e)
+      }
+      window.DEBUG_ON = true
+
+      var require = {
+        baseUrl: '{{config.base_url}}js/build/amd'
+      , shim: {
+          'jquery': { exports: 'jQuery' }
+        , 'handlebars': { exports: 'Handlebars' }
+        , 'ember': {
+            deps: [ 'handlebars' ]
+          , exports: 'Ember'
+          }
+        , 'ember-data': {
+            deps: [ 'ember' ]
+          , exports: 'DS'
+          }
+        , 'bootstrap': { deps: [ 'jquery' ] }
+        }
+      , paths: {
+          'debug': '../../lib/debug/dist/debug'
+        , 'jquery': '../../lib/jquery/dist/jquery'
+        , 'bootstrap': '../../lib/bootstrap/dist/js/bootstrap'
+        , 'handlebars': '../../lib/handlebars/handlebars'
+        , 'moment': '../../lib/moment/moment'
+        , 'ember': '../../lib/ember/ember'
+        , 'ember-data': '../../lib/ember-data/ember-data'
+        , 'lodash': '../../lib/lodash/dist/lodash'
+        , 'socket.io': '../../../socket.io/socket.io.js'
+        }
+      }
     </script>
     {{#each templates}}
       <script type="text/x-handlebars"{{#unless (eq this "application")}} id="{{this}}"{{/unless}}>
@@ -21,15 +50,11 @@
       </script>
     {{/each}}
     <script src="{{config.base_url}}js/lib/es5-shim/es5-shim.js"></script>
-    <script src="{{config.base_url}}js/lib/debug/dist/debug.js"></script>
-    <script src="{{config.base_url}}js/lib/jquery/dist/jquery.js"></script>
-    <script src="{{config.base_url}}js/lib/handlebars/handlebars.js"></script>
-    <script src="{{config.base_url}}js/lib/ember/ember.js"></script>
-    <script src="{{config.base_url}}js/lib/ember-data/ember-data.js"></script>
-    <script src="{{config.base_url}}js/lib/moment/moment.js"></script>
-    <script src="{{config.base_url}}js/lib/bootstrap/dist/js/bootstrap.js"></script>
-    <script src="{{config.base_url}}js/lib/lodash/dist/lodash.js"></script>
-    <script src="{{config.base_url}}socket.io/socket.io.js"></script>
-    <script src="{{config.base_url}}js/build/app.js"></script>
+    <script src="{{config.base_url}}js/lib/requirejs/require.js"></script>
+    <script>
+      require(['app'], function (App) {
+        App.run()
+      })
+    </script>
   </body>
 </html>

@@ -1,4 +1,4 @@
-App.IndexController = Ember.Controller.extend({
+module.exports = require('ember').Controller.extend({
   layout: 'tabular'
 , games: []
 , gameData: {

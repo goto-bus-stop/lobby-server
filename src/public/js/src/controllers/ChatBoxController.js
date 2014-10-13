@@ -1,4 +1,4 @@
-App.ChatBoxController = Ember.Controller.extend({
+module.exports = require('ember').Controller.extend({
   actions: {
 //    sendChat: function () {
 //      var message = this.get('message');

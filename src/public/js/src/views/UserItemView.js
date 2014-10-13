@@ -1,14 +1,9 @@
-var debugU = debug('aocmulti:view:user-item')
+var Ember = require('ember')
+  , debug = require('debug')('aocmulti:view:user-item')
 
-App.UserItemView = Ember.View.extend({
+module.exports = Ember.View.extend({
   templateName: 'user-item'
-, rating: function () {
-    var ratings = this.get('context.ratings')
-      , ladder = this.get('ladder.id')
-    
-    if (ratings[ladder]) return ratings[ladder].elo
-    return 'null'
-  }.property('ladder')
+
 , didInsertElement: function () {
     var el = this.$()
       , tooltip = el.find('.user-tooltip')
@@ -23,4 +18,13 @@ App.UserItemView = Ember.View.extend({
     el.on('mouseenter', function () { tooltip.removeClass('hide') })
     el.on('mouseleave', function () { tooltip.addClass('hide') })
   }
+
+, showContextMenu: function (e) {
+    e.preventDefault()
+    $('#context-menu').show().css({ top: e.pageY + 'px', left: e.pageX + 'px' })
+    $(document).one('click', function () {
+      $('#context-menu').hide()
+    })
+  }.on('contextMenu')
+
 })

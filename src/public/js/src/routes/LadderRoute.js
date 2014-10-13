@@ -1,6 +1,8 @@
+var Ember = require('ember')
+
 var get = Ember.get
 
-App.LadderRoute = Ember.Route.extend({
+module.exports = Ember.Route.extend({
   model: function (params) {
     return { ladder: App.get('ladders').findBy('id', parseInt(params.ladder_id, 10)) }
   }

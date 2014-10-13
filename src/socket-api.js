@@ -4,11 +4,12 @@ require('./fn').install(global)
 
 const PubSub = require('./PubSub')
     , api = require('./api')
+    , store = require('./store')
+    , pp = require('./passport')
+    , config = require('../config')
     , signature = require('cookie-signature')
     , cookieParser = require('cookie-parser')()
-    , config = require('../config')
     , debug = require('debug')('aocmulti:socket-api')
-    , store = require('./store')
     , uuid = require('node-uuid')
 
 const Errors = {
@@ -42,9 +43,9 @@ const cookieAuth = function (app) {
 }
 
 module.exports = function (app, io) {
-  
+
   const subscribers = function (x) { return io.in('subscription:' + x) }
-  const passthruEvents = [ 'gameRoom:created', 'gameRoom:starting', 'gameRoom:destroyed' ]
+  const passthruEvents = [ 'gameRoom:created', 'gameRoom:destroyed' ]
   passthruEvents.forEach(function (event) {
     PubSub.subscribe(event, function () {
       io.emit.apply(io, concat([ event ], toArray(arguments)))
@@ -78,15 +79,16 @@ module.exports = function (app, io) {
   PubSub.subscribe('onlinePlayers:userLeft', function (uid) {
     subscribers('onlinePlayers').emit('onlinePlayers:left', uid)
   })
-  
+
   PubSub.subscribe('gameRoom:ready', function (rid) {
     io.in('room:' + rid).emit('game:launching')
   })
-  
+
   var disconnections = {}
-  
+
   io.use(cookieAuth(app))
-  
+//  io.use(pp.authenticate('local'))
+
   io.on('connection', function (sock) {
     const session = sock.session
     let loggedUser
@@ -116,52 +118,54 @@ module.exports = function (app, io) {
       cb && cb()
     })
 
-    // store
-    const cleanUserRecord = compose(renameProp('roomId', 'inRoom'),
-                                    subset([ 'id', 'username', 'country', 'status', 'roomId', 'ratings' ]))
-        , cleanGameRoomRecord = compose(renameProp('playerIds', 'players'),
-                                        subset([ 'id', 'title', 'descr', 'hostId', 'ladderId', 'maxPlayers', 'serverId', 'status', 'playerIds' ]))
-        , cleanModRecord = renameProp('userId', 'author')
-    const filters = {
-      user: compose(await(cleanUserRecord),
-                    api.addRatings),
-      users: compose(await(map(cleanUserRecord)),
-                     api.addRatingsA),
-      gameRoom: compose(api.addPlayers,
-                        cleanGameRoomRecord),
-      gameRooms: compose(api.addPlayersA,
-                         map(cleanGameRoomRecord)),
-      mod: cleanModRecord,
-      mods: map(cleanModRecord)
-    }
-    const applyFilter = curry(function (type, data) {
-      return filters[type] ? filters[type](data) : data
-    })
-    sock.on('store:find', function (type, id, cb) {
-      store.find(type, id)
-        .then(applyFilter(type))
-        .nodeify(cb)
-    })
-    sock.on('store:findMany', function (type, ids, cb) {
-      store.findMany(type, ids)
-        .then(applyFilter(type + 's'))
-        .nodeify(cb)
-    })
-    sock.on('store:findAll', function (type, query, cb) {
-      store.findAll(type, query)
-        .then(applyFilter(type + 's'))
-        .nodeify(cb)
-    })
-    sock.on('store:findQuery', function (type, query, cb) {
-      store.queryMany(type, query)
-        .then(applyFilter(type + 's'))
-        .nodeify(cb)
-    })
-    sock.on('store:createRecord', function (type, record, cb) {
+    if (false) {
+      // store
+      const cleanUserRecord = compose(renameProp('roomId', 'inRoom'),
+                                      subset([ 'id', 'username', 'country', 'status', 'roomId', 'ratings' ]))
+          , cleanGameRoomRecord = compose(renameProp('playerIds', 'players'),
+                                          subset([ 'id', 'title', 'descr', 'hostId', 'ladderId', 'maxPlayers', 'serverId', 'status', 'playerIds' ]))
+          , cleanModRecord = renameProp('userId', 'author')
+      const filters = {
+        user: compose(await(cleanUserRecord),
+                      api.addRatings),
+        users: compose(await(map(cleanUserRecord)),
+                       api.addRatingsA),
+        gameRoom: compose(api.addPlayers,
+                          cleanGameRoomRecord),
+        gameRooms: compose(api.addPlayersA,
+                           map(cleanGameRoomRecord)),
+        mod: cleanModRecord,
+        mods: map(cleanModRecord)
+      }
+      const applyFilter = curry(function (type, data) {
+        return filters[type] ? filters[type](data) : data
+      })
+      sock.on('store:find', function (type, id, cb) {
+        store.find(type, id)
+          .then(applyFilter(type))
+          .nodeify(cb)
+      })
+      sock.on('store:findMany', function (type, ids, cb) {
+        store.findMany(type, ids)
+          .then(applyFilter(type + 's'))
+          .nodeify(cb)
+      })
+      sock.on('store:findAll', function (type, query, cb) {
+        store.findAll(type, query)
+          .then(applyFilter(type + 's'))
+          .nodeify(cb)
+      })
+      sock.on('store:findQuery', function (type, query, cb) {
+        store.queryMany(type, query)
+          .then(applyFilter(type + 's'))
+          .nodeify(cb)
+      })
+      sock.on('store:createRecord', function (type, record, cb) {
       debug('createRecord', type, record)
       store.insert(type, record)
         .nodeify(cb)
     })
+    }
 
     // api calls
     sock.on('users:me', function (cb) {
@@ -224,6 +228,9 @@ module.exports = function (app, io) {
       io.in('room:' + room).emit('chat:message:' + room, { rid: room, msg: 'Game starting…', uid: 0 })
       setTimeout(function () {
         api.startGame(room)
+          .then(function () {
+            return store.query('gameSession', { userId: session.uid })
+          })
           .then(compose(uuid.unparse, pluck('seskey')))
           .nodeify(cb)
       }, 1000)
@@ -231,7 +238,9 @@ module.exports = function (app, io) {
     function _gameRoomStarting(rid) {
       if (rid == session.rid) {
         store.query('gameSession', { userId: session.uid }).then(function (ses) {
-          sock.emit('gameRoom:starting', uuid.unparse(ses.seskey))
+          if (ses.status === 'waiting') {
+            sock.emit('gameRoom:starting', uuid.unparse(ses.seskey))
+          }
         })
       }
     }

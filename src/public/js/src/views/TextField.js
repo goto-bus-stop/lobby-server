@@ -1,3 +1,5 @@
-App.TextField = Ember.TextField.extend({
+var Ember = require('ember')
+
+module.exports = Ember.TextField.extend({
   classNames: [ 'form-control' ]
 })

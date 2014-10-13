@@ -62,6 +62,7 @@ PubSub.prototype.unsubscribe = function (evt, fn) {
  */
 PubSub.prototype.publish = function (evt, args) {
   const e = this.$events && this.$events[evt]
+  debug('publishing ' + evt, args)
   if (e) {
     args = [].slice.call(arguments, 1)
     process.nextTick(function () {
@@ -69,6 +70,9 @@ PubSub.prototype.publish = function (evt, args) {
         e[i].apply(this, args)
       }
     }.bind(this))
+  }
+  else {
+    debug('no events on ' + evt)
   }
   return this
 }

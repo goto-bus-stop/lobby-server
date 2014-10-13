@@ -1,11 +1,13 @@
-var debugG = debug('aocmulti:route:gameRoom')
-  , Promise = Ember.RSVP.Promise
+var Ember = require('ember')
+  , debug = require('debug')('aocmulti:route:gameRoom')
 
-App.GameRoomRoute = Ember.Route.extend({
+var Promise = Ember.RSVP.Promise
+
+module.exports = Ember.Route.extend({
   subscription: null
   
 , model: function (params) {
-    return this.store.find('gameRoom', params.room_id)
+    return this.store.find('room', params.room_id)
   }
 
 , afterModel: function (room) {
@@ -15,16 +17,20 @@ App.GameRoomRoute = Ember.Route.extend({
       this.set('subscription',
         socket.subscribe('gameRoom', function () { })
           .on('playerEntered', function () {
-            debugG('playerEntered', arguments)
+            debug('playerEntered', arguments)
             room.reload()
           })
           .on('playerLeft', function () {
-            debugG('playerLeft', arguments)
+            debug('playerLeft', arguments)
             room.reload()
           })
           .on('hostChanged', function () {
-            debugG('hostChanged', arguments)
+            debug('hostChanged', arguments)
             room.reload()
+          })
+          .on('starting', function (seskey) {
+            debug('starting', arguments)
+            App.DPRun(seskey)
           })
       )
     }.bind(this))
@@ -61,8 +67,8 @@ App.GameRoomRoute = Ember.Route.extend({
           App.notify({ type: 'error', message: e.message })
         }.bind(this))
     }
-    debugG('afterPromise')
-    debugG('players right afterPromise', room.get('players').mapBy('id'))
+    debug('afterPromise')
+    debug('players right afterPromise', room.get('players').mapBy('id'))
     return new Promise(function(res){res()})
   }
 

@@ -1,5 +1,10 @@
-App.Router.map(function () {
-  this.route('game-room', { path: '/room/:room_id' })
+var Ember = require('ember')
+
+var Router = Ember.Router.extend({
+  location: 'auto'
+})
+Router.map(function () {
+  this.route('room', { path: '/room/:room_id' })
   this.route('profile', { path: '/profile/:user_id' })
   this.route('mods')
   this.route('mod', { path: '/mods/:mod_id' })
@@ -7,6 +12,4 @@ App.Router.map(function () {
   this.route('ladder', { path: '/ladders/:ladder_id' })
 })
 
-App.Router.reopen({
-  location: 'auto'
-})
+module.exports = Router

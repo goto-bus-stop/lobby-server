@@ -18,12 +18,13 @@ const http = require('http')
 // Web site stuff
     , express = require('express')
     , cookieParser = require('cookie-parser')
-    , bodyParser = require('body-parser')
+    //, bodyParser = require('body-parser')
     , session = require('express-session')
     , csurf = require('csurf')
     , logger = require('morgan')
     , lessMiddleware = require('less-middleware')
     , pp = require('passport')
+    , qs = require('qs')
 
     , sql = require('./sql')
     , api = require('./api')
@@ -54,7 +55,15 @@ app.passport = pp
 
 //app.use(logger())
 app.use(cookieParser())
-app.use(bodyParser.urlencoded({ extended: true }))
+//app.use(bodyParser.urlencoded({ extended: true }))
+app.use(function (req, res, next) {
+  var txt = ''
+  req.on('data', function (ch) { txt += ch })
+  req.on('end', function () {
+    req.body = qs.parse(txt)
+    next()
+  })
+})
 app.use(session({
   secret: config.cookie_secret
 , key: 'sid'
@@ -82,7 +91,7 @@ app.use(require('./routes/index')())
 app.use(require('./routes/register')())
 
 // Web App API
-app.use('/api', require('./routes/web-api')())
+app.use('/_', require('./routes/web-api')())
 // Client API
 app.use('/client', require('./routes/client-api')())
 

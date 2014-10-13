@@ -1,5 +1,10 @@
-var debugF = debug('aocmulti:component:filter-query')
-  , get = Ember.get
+var Ember = require('ember')
+  , debug = require('debug')('aocmulti:component:filter-query')
+  , _ = require('lodash')
+
+require('bootstrap')
+
+var get = Ember.get
 
 // helpers
 var getOffsetWithPrevElements = function (selectionContainer, extraOffset) {
@@ -15,8 +20,10 @@ var preventEnter = function (e) {
   if (e.keyCode === 13) e.preventDefault()
 }
 
-App.FilterQueryComponent = Ember.Component.extend({
-  lastText: ''
+module.exports = Ember.Component.extend({
+  classNames: [ 'component', 'filter-query' ]
+
+, lastText: ''
 , showPlaceholder: true
 , presets: [
     { name: 'Random Map', expr: 'AoC and RM' }
@@ -28,7 +35,7 @@ App.FilterQueryComponent = Ember.Component.extend({
     var el = this.$('.filter-query')
     el.on('keypress', preventEnter)
     el.on('keyup', this.rehighlight.bind(this))
-    
+
     var presets = this.$('.dropdown-menu ul')
     presets.on('click', function (e) {
       el.html($(e.target).closest('li').data('preset'))
@@ -302,7 +309,7 @@ function makeRegExp(match, sub) {
   var rx = function (t) { return t[sub].replace('*', '.*?') }
     , regex
 
-  if (Array.isArray(match)) {
+  if (_.isArray(match)) {
     regex = '(' + match.map(rx).join('|') + ')'
   }
   else {
@@ -310,7 +317,7 @@ function makeRegExp(match, sub) {
   }
   return RegExp(regex, 'i')
 }
-var comparers = {
+var comparators = {
   player: function matchPlayer(op, match, obj) {
     match = makeRegExp(match, 'name')
     switch (op) {
@@ -351,8 +358,8 @@ function run(ast, obj, cb) {
       list.push(ast)
       return list
     case 'compare':
-      if (comparers[ast.left.key]) {
-        return comparers[ast.left.key](ast.op, run(ast.right), obj)
+      if (comparators[ast.left.key]) {
+        return comparators[ast.left.key](ast.op, run(ast.right), obj)
       }
       else {
         throw new Error('no idea how to compare ' + JSON.stringify(ast.left) + ' with anything')
@@ -368,10 +375,14 @@ function compile_(ast, parent) {
   }
   
   switch (ast.type) {
-    case 'and': res = 'lib.and(' + wrap(compile_(ast.left, ast)) + ', ' + wrap(compile_(ast.right, ast)) + ')'; break
-    case 'or': res = 'lib.or(' + wrap(compile_(ast.left, ast)) + ', ' + wrap(compile_(ast.right, ast)) + ')'; break
+    case 'and':
+      res = 'lib.and(' + wrap(compile_(ast.left, ast)) + ', ' + wrap(compile_(ast.right, ast)) + ')'
+      break
+    case 'or':
+      res = 'lib.or(' + wrap(compile_(ast.left, ast)) + ', ' + wrap(compile_(ast.right, ast)) + ')'
+      break
     case 'compare':
-      res = 'lib.comparison(lib.comparers[' + JSON.stringify(ast.op) + '], ' + wrap(compile_(ast.value, ast)) + ')'
+      res = 'lib.comparison(lib.comparators[' + JSON.stringify(ast.op) + '], ' + wrap(compile_(ast.value, ast)) + ')'
       break
     case 'player':
       res = parent.type === 'compare'

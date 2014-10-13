@@ -7,7 +7,7 @@
       <div class="form-group">
         <label class="control-label col-lg-2">Filter:</label>
         <div class="col-lg-10">
-          {{filter-query}}
+          {{filter-query collection=games}}
         </div>
       </div>
     </form>
@@ -20,7 +20,7 @@
   <div {{bind-attr class="renderPlayerList:col-lg-9:col-lg-12 renderPlayerList:col-md-8:col-md-12 renderPlayerList:col-sm-6:col-sm-6"}}>
     <ul {{bind-attr class=":list-unstyled layout"}}>
       {{#each games}}
-        {{view App.GameRoomSummary tagName="li"}}
+        {{view App.RoomSummary tagName="li"}}
       {{else}}
         <li><h2>No games found!</h2></li>
       {{/each}}

@@ -1,4 +1,4 @@
-App.GameListController = App.IndexController.extend({
+module.exports = require('./IndexController').extend({
   layout: 'list'
 , renderPlayerList: false
 })

@@ -1,3 +1,3 @@
-App.ChatMessageView = Ember.View.extend({
+module.exports = require('ember').View.extend({
   templateName: 'chat-message'
 })
