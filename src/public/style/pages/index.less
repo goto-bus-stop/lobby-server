@@ -1,0 +1,65 @@
+.index {
+
+  .header {
+    div.padded { padding-top: 22px; }
+    .form-group { margin-bottom: 0; }
+  }
+
+  .sidebar {
+    position: fixed;
+    top: 40px;
+    right: 0;
+    bottom: 15px;
+
+    > .panel {
+      border-radius: 0;
+      margin: 0;
+      height: 50%;
+    }
+    .online-players-panel {
+      border-bottom: 0;
+    }
+
+    .chat {
+      .panel-body {
+        @panel-heading-height: 42px;
+        padding: @panel-heading-height 15px 0 15px;
+        position: absolute;
+        right: 0;
+        width: 100%;
+        bottom: 0;
+        top: 50%;
+      }
+
+      .chat-box {
+        position: relative;
+        height: 100%;
+      }
+
+      .chat-messages {
+        position: absolute;
+        // hnng >_<
+        bottom: 34px;
+        top: 15px;
+        overflow-y: scroll;
+        left: 0;
+        right: 0;
+        padding: 0 15px 0 15px;
+      }
+
+      .chat-input {
+        position: absolute;
+        bottom: 0;
+
+        input {
+          border-top-left-radius: 0;
+          border-bottom-left-radius: 0;
+        }
+        button {
+          border-top-right-radius: 0;
+          border-bottom-right-radius: 0;
+        }
+      }
+    }
+  }
+}
