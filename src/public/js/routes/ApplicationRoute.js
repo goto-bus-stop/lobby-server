@@ -10,8 +10,8 @@ define(function (require, exports, module) {
     addLadders: function () {
       if (window.__ladders) {
         debug('adding ladders')
-        App.get('ladders').pushObjects(__ladders.map(function (l) {
-          return App.Ladder.create(l)
+        App.get('ladders').pushObjects(__ladders.map(function (ladder) {
+          return App.Ladder.create(ladder)
         }))
       }
     }.on('init')

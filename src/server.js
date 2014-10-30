@@ -2,7 +2,7 @@ const debug = require('debug')('aocmulti:server')
 
 // require() debug
 const _r = require
-require = function (path) {
+global.require = require = function (path) {
   debug('require', path)
   return _r(path)
 }
@@ -18,7 +18,7 @@ const http = require('http')
 // Web site stuff
     , express = require('express')
     , cookieParser = require('cookie-parser')
-    //, bodyParser = require('body-parser')
+    , bodyParser = require('body-parser')
     , session = require('express-session')
     , csurf = require('csurf')
     , logger = require('morgan')
@@ -55,15 +55,9 @@ app.passport = pp
 
 //app.use(logger())
 app.use(cookieParser())
-//app.use(bodyParser.urlencoded({ extended: true }))
-app.use(function (req, res, next) {
-  var txt = ''
-  req.on('data', function (ch) { txt += ch })
-  req.on('end', function () {
-    req.body = qs.parse(txt)
-    next()
-  })
-})
+app.use(bodyParser.urlencoded({ extended: true }))
+app.use(bodyParser.json())
+
 app.use(session({
   secret: config.cookie_secret
 , key: 'sid'

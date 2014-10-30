@@ -11,23 +11,12 @@ define(function (require, exports, module) {
       return App.get('ladders').findBy('id', parseInt(this.get('model.ladderId'), 10))
     }.property('model.ladderId')
 
-  , host: function () {
-      var hostId = parseInt(this.get('model.hostId'), 10)
-        , players = this.get('model.players')
-
-      return players.find(function (p) {
-        return parseInt(p.get('id'), 10) === hostId
-      })
-    }.property('model.hostId', 'model.players.[]')
-
   , otherPlayers: function () {
-      var hostId = parseInt(this.get('model.hostId'), 10)
-        , players = this.get('model.players')
-
-      return players.filter(function (p) {
-        return parseInt(p.get('id'), 10) !== hostId
-      })
-    }.property('host', 'model.players.[]')
+      var model = this.get('model')
+      // 'host' is a resolved promise at this point, the actual User model
+      // is in its content property
+      return model.get('players').without(model.get('host.content'))
+    }.property('model.host', 'model.players.[]')
 
   , full: Ember.computed.gte('model.players.length', 'model.maxPlayers')
 
@@ -41,15 +30,14 @@ define(function (require, exports, module) {
   , averageRating: function () {
       var ladder = this.get('model.ladderId')
         , players = this.get('model.players')
-        , totalRating = players.reduce(function (rate, player) {
-            return rate + get(player.get('ratings')[ladder], 'elo')
-          }, 0)
+        , totalRating = 0
       return totalRating / players.length
     }.property('model.players.[]')
 
   , hosting: function () {
-      return App.get('user.id') == this.get('host.id')
-    }.property('host')
+      // "As long as I don't break these… Promises"
+      return App.get('user') === this.get('model.host.content')
+    }.property('model.host.content')
 
   , actions: {
       launch: function () {

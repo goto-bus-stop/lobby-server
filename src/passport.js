@@ -16,7 +16,9 @@ const _authError = 'Username/Password combination not found'
 const comparePassword = Promise.denodeify(bcrypt.compare)
 const findUser = function (id) {
   const key = 'u' + id
-  if (userCache.has(key)) return Promise.resolve(userCache.get(key))
+  if (userCache.has(key)) {
+    return Promise.resolve(userCache.get(key))
+  }
   return store.find('user', id).then(isolate(function (user) {
     userCache.set(key, user)
   }))

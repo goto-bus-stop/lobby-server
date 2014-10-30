@@ -23,7 +23,7 @@ module.exports = function () {
         )
       )
       Promise.all([ store.findAll('ladder'), store.findAll('server'), templates ])
-        .spread(function (ladders, servers, templates) {
+        .thenCombine(function (ladders, servers, templates) {
           res.render('@layout', {
             content: '{{outlet}}',
             uid: req.session.uid,

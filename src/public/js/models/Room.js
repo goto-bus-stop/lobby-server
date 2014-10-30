@@ -12,7 +12,7 @@ define(function (require, exports, module) {
   , descr: attr('string')
   , maxPlayers: attr('number')
   , ladderId: attr('number')
-  , hostId: attr('number')
+  , host: belongsTo('user', { async: true })
   , status: attr('string') 
   , serverId: attr('number')
   , players: hasMany('user', { async: true })

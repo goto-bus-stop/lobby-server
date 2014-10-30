@@ -61,10 +61,7 @@ const addRatingsA = function (users) {
 const createGame = function (options) {
   // options { title, descr, maxPlayers, ladderId, hostId }
   return store.insert('gameRoom', subset([ 'title', 'descr', 'maxPlayers', 'ladderId', 'hostId' ], options))
-    .then(function (q) {
-      PubSub.publish('gameRoom:created', merge(options, { id: q.insertId }))
-      return q.insertId
-    })
+    .then(isolate(function (x) { PubSub.publish('gameRoom:created', x) }))
     .catch(writeDebugMessage)
 }
 

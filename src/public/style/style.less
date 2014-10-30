@@ -4,122 +4,15 @@
 
 @import "components/chat-box.less";
 @import "components/online-players.less";
+@import "components/filter-query.less";
+@import "pages/index.less";
+@import "pages/game-room.less";
 
 body {
   padding-top: @navbar-height;
 }
 
 .wrap {
-}
-
-.index {
-
-  .header {
-    div.padded { padding-top: 22px; }
-    .form-group { margin-bottom: 0; }
-  }
-  
-  .sidebar {
-    position: fixed;
-    top: 40px;
-    right: 0;
-    bottom: 15px;
-
-    > .panel {
-      border-radius: 0;
-      margin: 0;
-      height: 50%;
-    }
-    .online-players-panel {
-      border-bottom: 0;
-    }
-    
-    .chat {
-      .panel-body {
-        @panel-heading-height: 42px;
-        padding: @panel-heading-height 15px 0 15px;
-        position: absolute;
-        right: 0;
-        width: 100%;
-        bottom: 0;
-        top: 50%;
-      }
-      
-      .chat-box {
-        position: relative;
-        height: 100%;
-      }
-      
-      .chat-messages {
-        position: absolute;
-        // hnng >_<
-        bottom: 34px;
-        top: 15px;
-        overflow-y: scroll;
-        left: 0;
-        right: 0;
-        padding: 0 15px 0 15px;
-      }
-      
-      .chat-input {
-        position: absolute;
-        bottom: 0;
-        
-        input {
-          border-top-left-radius: 0;
-          border-bottom-left-radius: 0;
-        }
-        button {
-          border-top-right-radius: 0;
-          border-bottom-right-radius: 0;
-        }
-      }
-    }
-  }
-}
-
-.game-room {
-  position: absolute;
-  top: @navbar-height;
-  bottom: 0;
-  left: 0; right: 0;
-  
-  .chat {
-    position: absolute;
-    left: 25%;
-    // hnnng :(
-    top: 69px;
-    bottom: 15px;
-    
-    .chat-box { height: 100%; }
-    .chat-messages {
-      position: absolute;
-      // hnnng! :C
-      bottom: 34px;
-      top: 0;
-      left: 0;
-      right: 0;
-      overflow-y: scroll;
-      padding-right: 15px;
-    }
-    .chat-input {
-      bottom: 0;
-      position: absolute;
-    }
-  }
-  
-//  .is-host .username {
-//    &::before {
-//      display: inline-block;
-//      font-family: FontAwesome;
-//      font-style: normal;
-//      font-weight: normal;
-//      line-height: 1;
-//      -webkit-font-smoothing: antialiased;
-//      -moz-osx-font-smoothing: grayscale;
-//      content: "\f007";
-//    }
-//  }
 }
 
 @sidebar-width: 350px;
@@ -208,40 +101,9 @@ body {
   position: fixed;
 }
 
-.filter-query-wrap {
-  .dropdown-menu {
-    width: 100%;
-    padding: 5px;
-    ul { margin-bottom: 0;
-      li { cursor: pointer; } }
-  }
-  
-  .filter-query {
-    font-family: monospace;
-
-    .tok-andor { color: #777 }
-    .tok-whitespace {
-      // background-image: radial-gradient(circle, #ccc 0%, #ccc 10%, rgba(0, 0, 0, 0) 11%)
-    }
-    .tok-key { color: #5c2979 }
-    .tok-player { color: #222 }
-    .tok-word { color: #9f1616 }
-    .tok-num { color: #187925 }
-    .tok-generic { color: #9d699d }
-  }
-}
-
 .user-tooltip {
   z-index: @zindex-tooltip;
 }
-//  background: #fff;
-//  margin: 5px 0 0 15px;
-//  border: 1px solid #333;
-//  
-//  .table {
-//    margin: 0;
-//  }
-//}
 
 #context-menu {
   position: absolute;

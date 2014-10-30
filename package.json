@@ -38,8 +38,5 @@
     "amd-optimize": "^0.2.5",
     "gulp-esnext": "^1.2.0"
   },
-  "dependencies?": {
-    "curry": "1.x",
-    "lambdajs": "^1.0.1"
-  }
+  "scripts": { "start": "DEBUG=aocmulti:* node --harmony server" }
 }

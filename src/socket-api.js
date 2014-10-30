@@ -118,63 +118,9 @@ module.exports = function (app, io) {
       cb && cb()
     })
 
-    if (false) {
-      // store
-      const cleanUserRecord = compose(renameProp('roomId', 'inRoom'),
-                                      subset([ 'id', 'username', 'country', 'status', 'roomId', 'ratings' ]))
-          , cleanGameRoomRecord = compose(renameProp('playerIds', 'players'),
-                                          subset([ 'id', 'title', 'descr', 'hostId', 'ladderId', 'maxPlayers', 'serverId', 'status', 'playerIds' ]))
-          , cleanModRecord = renameProp('userId', 'author')
-      const filters = {
-        user: compose(await(cleanUserRecord),
-                      api.addRatings),
-        users: compose(await(map(cleanUserRecord)),
-                       api.addRatingsA),
-        gameRoom: compose(api.addPlayers,
-                          cleanGameRoomRecord),
-        gameRooms: compose(api.addPlayersA,
-                           map(cleanGameRoomRecord)),
-        mod: cleanModRecord,
-        mods: map(cleanModRecord)
-      }
-      const applyFilter = curry(function (type, data) {
-        return filters[type] ? filters[type](data) : data
-      })
-      sock.on('store:find', function (type, id, cb) {
-        store.find(type, id)
-          .then(applyFilter(type))
-          .nodeify(cb)
-      })
-      sock.on('store:findMany', function (type, ids, cb) {
-        store.findMany(type, ids)
-          .then(applyFilter(type + 's'))
-          .nodeify(cb)
-      })
-      sock.on('store:findAll', function (type, query, cb) {
-        store.findAll(type, query)
-          .then(applyFilter(type + 's'))
-          .nodeify(cb)
-      })
-      sock.on('store:findQuery', function (type, query, cb) {
-        store.queryMany(type, query)
-          .then(applyFilter(type + 's'))
-          .nodeify(cb)
-      })
-      sock.on('store:createRecord', function (type, record, cb) {
-      debug('createRecord', type, record)
-      store.insert(type, record)
-        .nodeify(cb)
-    })
-    }
-
     // api calls
     sock.on('users:me', function (cb) {
       cb(null, session.uid)
-    })
-    sock.on('onlinePlayers:list', function (cb) {
-      api.getOnlineUsers(1)
-        .then(map(pluck('id')))
-        .nodeify(cb)
     })
 
     // Chat API

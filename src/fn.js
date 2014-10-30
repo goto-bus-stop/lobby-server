@@ -71,11 +71,11 @@ const partial = curry(function (fn, args) {
 })
 //+ singleton :: String -> _ -> Object
 const singleton = curry(function (k, v) { let o = {}; return o[k] = v, o })
-//+ isolate :: (a -> _) -> (a -> a)
-const isolate = function (fn) { return function (x) { fn(x); return x } }
+//+ isolate :: (a -> _) -> b -> (a -> b)
+const isolate = curry(function (fn, x) { fn(x); return x })
 //+ append :: [a] -> [a] -> [a]
 const append = curry(function (suffix, arr) { return arr.concat(suffix) })
-//+ associate :: [String] -> [a]
+//+ associate :: [String] -> [a] -> ?
 const associate = curry(function (keys, values) {
   return reduce(function (obj, key, i) { obj[key] = values[i]; return obj }, {}, keys)
 })

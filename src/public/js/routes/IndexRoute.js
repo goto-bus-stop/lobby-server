@@ -7,27 +7,26 @@ define(function (require, exports, module) {
 
   module.exports = Ember.Route.extend({
     setupController: function (controller) {
+      var store = this.store
       this.store.find('room').then(function (games) {
         controller.set('games', games)
       })
 
       socket.subscribe('gameRoom')
         .on('created', function (room) {
-          controller.get('games').pushObject(room)
+          debug('creating', room)
+          store.find('room', room).then(function () {
+            controller.set('games', store.all('room'))
+          })
         })
         .on('destroyed', function (roomIds) {
-          var l = roomIds.length
-          var games = controller.get('games').reject(function (room) {
-            var roomId = get(room, 'id')
-              , i
-            for (i = 0; i < l; i++) {
-              if (roomId == roomIds[i]) {
-                return true
-              }
-            }
-            return false
+          debug('destroying', roomIds)
+          roomIds.forEach(function (id) {
+            var destroyedRoom = store.getById('room', id)
+            debug('room:', destroyedRoom)
+            destroyedRoom && store.unloadRecord(destroyedRoom)
           })
-          controller.set('games', games)
+          controller.set('games', store.all('room'))
         })
     }
 
@@ -41,10 +40,6 @@ define(function (require, exports, module) {
             , ladderId: get(data, 'ladder')
             , hostId: App.get('user.id')
             }
-        if (options.title.length <= 5) {
-          alert('That\'s not a very inspiring title, please make it looooooonger :(')
-          return
-        }
         this.set('sendingRequest', true)
         var record = this.store.createRecord('room', options)
         record.save()

@@ -1,0 +1,43 @@
+.game-room {
+  position: absolute;
+  top: @navbar-height;
+  bottom: 0;
+  left: 0; right: 0;
+
+  .chat {
+    position: absolute;
+    left: 25%;
+    // hnnng :(
+    top: 69px;
+    bottom: 15px;
+
+    .chat-box { height: 100%; }
+    .chat-messages {
+      position: absolute;
+      // hnnng! :C
+      bottom: 34px;
+      top: 0;
+      left: 0;
+      right: 0;
+      overflow-y: scroll;
+      padding-right: 15px;
+    }
+    .chat-input {
+      bottom: 0;
+      position: absolute;
+    }
+  }
+
+//  .is-host .username {
+//    &::before {
+//      display: inline-block;
+//      font-family: FontAwesome;
+//      font-style: normal;
+//      font-weight: normal;
+//      line-height: 1;
+//      -webkit-font-smoothing: antialiased;
+//      -moz-osx-font-smoothing: grayscale;
+//      content: "\f007";
+//    }
+//  }
+}

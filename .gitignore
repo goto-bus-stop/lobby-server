@@ -1,4 +1,5 @@
 node_modules
 build
 src/public/js/lib
-src/public/js/build
+src/public/style/lib
+src/public/style/style.css

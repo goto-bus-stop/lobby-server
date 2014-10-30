@@ -8,7 +8,7 @@ define(function (require, exports, module) {
     username: attr('string')
   , country: attr('string')
   , status: attr('string')
-  , inRoom: DS.belongsTo('room')
+  , inRoom: DS.belongsTo('room', { inverse: 'players' })
   , ratings: attr()
 
     // properties
