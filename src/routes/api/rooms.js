@@ -38,15 +38,22 @@ module.exports = function () {
   })
   app.post('/:game_id/start', function (req, res) {
     const id = req.params.game_id
+    const myId = req.session.uid
     // set room to playing
     store.update('gameRoom', { id: id }, { status: 'playing' })
       // get players
-      .then(function () { return store.queryMany('user', { roomId: id }) })
+      .then(compose(store.queryMany('user'), singleton('roomId')))
       // create player sessions
-      .then(map(function (player) { return createSessionRecord(id, player.id) }))
+      .then(map(compose(createSessionRecord(id), pluck('id'))))
       // store player sessions
-      .then(store.insertMany('session'))
-      .then(function () { PubSub.publish('game:start', id) })
+      .thenSplit([
+        store.insertMany('gameSession'),
+        compose(pluck(0), filter(function (session) { return session.userId === myId }))
+      ])
+      .thenCombine(function (ins, mySession) {
+        return uuid.unparse(mySession.seskey)
+      })
+      .then(isolate(function () { PubSub.publish('game:start', id) }))
       .then(util.sendResponse(res))
       .catch(util.sendError(500, 'Could not start game', res))
   })
@@ -61,7 +68,6 @@ module.exports = function () {
       ip: req.ip
     }
     api.createGame(options)
-      .then(function (result) { return debug(result), api.joinRoom(req.session.uid, result.id).then(constant(result)) })
       .then(singleton('room'))
       .then(util.sendResponse(res))
       .catch(util.sendError(500, 'Could not host game room', res))

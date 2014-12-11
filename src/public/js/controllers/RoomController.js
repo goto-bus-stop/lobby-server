@@ -42,11 +42,12 @@ define(function (require, exports, module) {
   , actions: {
       launch: function () {
         this.set('model.status', 'launching')
-        socket.emit('gameRoom:launch', function (e, seskey) {
-          debug('err', e)
-          debug('ses', seskey)
-          App.DPRun(seskey)
-        })
+        var roomId = this.get('model.id')
+        $.post('/_/rooms/' + roomId + '/start')
+          .then(function (seskey) {
+            debug('ses', seskey)
+            App.DPRun(seskey)
+          })
       }
     }
 

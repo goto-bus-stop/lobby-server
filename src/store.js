@@ -14,12 +14,20 @@ const pagination = function (query) {
   return ''
 }
 const where = function (o) { return SqlString.objectToValues(o, null, ' AND ') }
+const throwIfEmpty = function (records) {
+  if (records.length === 0) {
+    throw new Error('not found')
+  }
+  return records
+}
 
 const mysqlStore = function (sql) {
   const st = {
     find: curry(function (type, id) {
       debug('find', type, id)
-      return sql.query('SELECT ' + fields(arguments, 3) + ' FROM ?? WHERE id = ? LIMIT 1', [ table(type), id ]).then(pluck(0))
+      return sql.query('SELECT ' + fields(arguments, 3) + ' FROM ?? WHERE id = ? LIMIT 1', [ table(type), id ])
+        .then(throwIfEmpty)
+        .then(pluck(0))
     }),
     findMany: curry(function (type, ids) {
       debug('findMany', type, ids)
@@ -31,7 +39,9 @@ const mysqlStore = function (sql) {
     },
     query: curry(function (type, query) {
       debug('query', type, query)
-      return sql.query('SELECT ' + fields(arguments, 3) + ' FROM ?? WHERE ' + where(query) + ' LIMIT 1', [ table(type) ]).then(pluck(0))
+      return sql.query('SELECT ' + fields(arguments, 3) + ' FROM ?? WHERE ' + where(query) + ' LIMIT 1', [ table(type) ])
+        .then(throwIfEmpty)
+        .then(pluck(0))
     }),
     queryMany: curry(function (type, query) {
       debug('queryMany', type, query)

@@ -11,7 +11,7 @@ const config = require('../config')
 // patch SqlString to do format arrays in objects with IN()
 SqlString.objectToValues = function (object, timeZone, sep) {
   if (!sep) sep = ', '
-  
+
   var values = []
     , key
     , value
@@ -43,7 +43,7 @@ const pool = mysql.createPool({
 var $queryId = 0
 function query(conn, sql) {
   var args = [].slice.call(arguments, 1);
-  
+
   if (typeof conn === 'string') {
     let _conn
     args.unshift(conn)
@@ -54,13 +54,13 @@ function query(conn, sql) {
       _conn && _conn.release()
     })
   }
-  
+
   var formattedSql = mysql.format.apply(mysql, args);
   return new Promise(function (resolve, reject) {
     const queryId = ++$queryId
     args.push(function (err, rows) {
       debug('finished query #' + queryId)
-      debug('err', err)
+      debug('  err', err)
       if (err) reject(err)
       else resolve(rows)
     })
@@ -81,17 +81,4 @@ function getConnection() {
 exports.query = query
 exports.getConnection = getConnection
 exports.pool = pool
-exports.mysql = mysql;
-exports.prefixKeys = function prefixKeys(obj, prefix) {
-  if (prefix) {
-    prefix += '.'
-  }
-  else {
-    prefix = ''
-  }
-  var prefixed = {}
-  _.forOwn(obj, function (val, key) {
-    prefixed[prefix + key] = val
-  })
-  return prefixed
-}
+exports.mysql = mysql

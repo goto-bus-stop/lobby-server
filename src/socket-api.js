@@ -153,17 +153,6 @@ module.exports = function (app, io) {
     sock.on('chat:unsubscribe', chatUnsubscribe)
 
     // Game API
-    sock.on('gameRoom:join', function (rid, cb) {
-      debug('gameRoom:join', rid, 'uid:' + session.uid)
-      if (session.rid == rid) {
-        cb(null, true)
-      }
-      else {
-        api.joinRoom(session.uid, rid)
-          .then(isolate(function () { session.rid = rid }))
-          .nodeify(cb)
-      }
-    })
     sock.on('gameRoom:leave', function (cb) {
       session.rid = null
       api.leaveRoom(session.uid)
@@ -176,6 +165,7 @@ module.exports = function (app, io) {
         api.startGame(room)
           .then(function () {
             return store.query('gameSession', { userId: session.uid })
+              .then(isolate(debug.bind(null, 'gameSession')))
           })
           .then(compose(uuid.unparse, pluck('seskey')))
           .nodeify(cb)
@@ -204,5 +194,5 @@ module.exports = function (app, io) {
       }, 5000)
     })
   })
-  
+
 }

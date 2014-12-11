@@ -20,7 +20,9 @@ define(function (require, exports, module) {
 
   Handlebars.helper('player-elo', function (player, o) {
     var ladderId = o.hash && o.hash.ladder || 1
-    return Ember.get(player.get('ratings')[ladderId], 'elo')
+    var ladder = App.ladders.findBy('id', parseInt(ladderId, 10))
+    var rating = player.get('ratings')[ladderId]
+    return rating ? Ember.get(rating, 'elo') : ladder.defaultElo
   })
 
 })
