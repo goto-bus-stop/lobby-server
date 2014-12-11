@@ -12,9 +12,9 @@ const api = require('../api')
 module.exports = function () {
 
   let app = express.Router()
-  
+
   function indexRoute(req, res) {
-    if (req.session.uid) {
+    if (req.isAuthenticated()) {
       var baseDir = path.join(__dirname, '../templates')
       var templates = glob(baseDir + '{/**/*,*}.handlebars').then(
         compose(
@@ -39,19 +39,11 @@ module.exports = function () {
   }
   app.get('/', indexRoute)
   app.post('/', pp.authenticate('local'), function (req, res) {
-    store.query('user', { username: req.body.username.trim() })
-      .then(function (user) {
-        if (user) {
-          req.session.uid = user.id
-          res.redirect('/')
-        }
-        else {
-          throw new Error()
-        }
-      })
-      .catch(function () { res.send('That user no exists!!!1!!') })
+    req.session.uid = req.session.passport.user
+    res.redirect('/')
   })
-  
+  app.use('/auth', require('./auth')())
+
   app.get('/room/:room_id', indexRoute)
   app.get('/mods', indexRoute)
   app.get('/mods/:mod_id', indexRoute)

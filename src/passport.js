@@ -2,8 +2,12 @@
 
 const api = require('./api')
     , bcrypt = require('bcryptjs')
+    , util = require('util')
     , LocalStrategy = require('passport-local').Strategy
+    , OpenIDStrategy = require('passport-openid').Strategy
+    , SteamStrategy = require('./strategies/SteamStrategy')
     , debug = require('debug')('aocmulti:passport')
+    , config = require('../config.json')
     , Promise = require('./promise')
     , fn = require('./fn')
     , store = require('./store')
@@ -39,4 +43,19 @@ module.exports = function (pp) {
       })
       .nodeify(done)
   }))
+
+  if (config.auth.steam) {
+    pp.use(new SteamStrategy(config.auth.steam, function (openid, user, done) {
+      store.query('openid', { openid: openid })
+        .then(compose(store.find('user'), pluck('userId')))
+        .catch(function (e) {
+          return store.insert('user', user)
+            .then(function (newRecord) {
+              return store.insert('openid', { userId: newRecord.id, openid: openid })
+                .then(constant(newRecord))
+            })
+        })
+        .nodeify(done)
+    }))
+  }
 }

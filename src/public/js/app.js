@@ -42,6 +42,7 @@ define(function (require, exports, module) {
   , LadderRoute: require('routes/LadderRoute')
   , ModsRoute: require('routes/ModsRoute')
   , RoomRoute: require('routes/RoomRoute')
+  , LogoutRoute: require('routes/LogoutRoute')
 
   , ChatMessageView: require('views/ChatMessageView')
   , NumberField: require('views/NumberField')

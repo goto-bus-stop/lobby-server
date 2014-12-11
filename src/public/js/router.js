@@ -12,6 +12,7 @@ define(function (require, exports, module) {
     this.route('mod', { path: '/mods/:mod_id' })
     this.route('mod-install', { path: '/mods/:mod_id/install' })
     this.route('ladder', { path: '/ladders/:ladder_id' })
+    this.route('logout')
   })
 
   module.exports = Router

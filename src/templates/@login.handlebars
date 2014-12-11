@@ -19,7 +19,7 @@
               <div class="alert alert-info">
                 To use this app, you need to have Javascript enabled, as well as first-party cookies (to save your login session).
               </div>
-              <div class="form-group">
+              <div class="form-group hide">
                 <label for="server" class="col-sm-3 control-label">Server</label>
                 <div class="col-sm-9">
                   <select name="server" id="server" class="form-control">
@@ -41,10 +41,20 @@
                   <input type="password" name="password" id="password" class="form-control" placeholder="Password">
                 </div>
               </div>
+              <div class="form-group">
+                <div class="col-sm-9 col-sm-offset-3">
+                  <button type="submit" class="btn btn-primary">Log in</button>
+                </div>
+              </div>
+              <div class="form-group">
+                <div class="col-sm-3 control-label">or…</div>
+                <div class="col-sm-9 auth-steam">
+                  <a href="/auth/steam" class="btn btn-link">
+                    <img src="https://steamcommunity-a.akamaihd.net/public/images/signinthroughsteam/sits_small.png">
+                  </a>
+                </div>
+              </div>
             </div>
-            <footer class="modal-footer">
-              <button type="submit" class="btn btn-primary">Log in</button>
-            </footer>
           </div>
         </div>
       </main>

@@ -1,0 +1,22 @@
+{ "db":
+  { "host": "MYSQL_HOST"
+  , "user": "MYSQL_USER"
+  , "password": "MYSQL_PASSWORD"
+  , "database": "MYSQL_DATABASE" }
+, "cookie_secret": "express-session cookie secret"
+, "base_url": "/",
+, "port": 3000,
+, "socket": true,
+, "redis":
+  { "host": "REDIS_HOST"
+  , "port": 6379
+  , "db": 0 }
+, "env": "development"
+
+, "auth":
+  { "steam":
+    { "returnURL": "http://HOST:3000/auth/steam/return"
+    , "realm": "http://HOST:3000",
+    , "apiKey": "1267A4F5EBE237372F9AF10E3531E089" }
+  }
+}
