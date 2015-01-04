@@ -1,0 +1,9 @@
+{ "knex":
+  { "client": "mysql"
+  , "connection":
+    { "host": "localhost"
+    , "user": "lobby_server"
+    , "password": "password"
+    , "database": "lobby_server" }
+  }
+}
