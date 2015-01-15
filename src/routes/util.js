@@ -1,6 +1,6 @@
 import db from '../knex'
 import { indexBy } from 'lodash'
-import { merge, compose, curry, forEach, map, pluck } from '../fn'
+import { merge, compose, curry, forEach, map, pluck, intoObj } from '../fn'
 
 const debug = require('debug')('aocmulti:routes:api:util')
 
@@ -30,7 +30,7 @@ export function sideloadPlayers(data) {
     .tap(forEach(player => {
       roomsById[player.roomId].players.push(player.id)
     }))
-    .then(compose( merge(data), users => ({ users }) ))
+    .then(compose( merge(data), intoObj('users') ))
 }
 
 export function sideloadRatings(data) {
@@ -45,7 +45,7 @@ export function sideloadRatings(data) {
     .tap(forEach(rating => {
       playersById[rating.userId].ratings.push(rating.id)
     }))
-    .then(compose( merge(data), ratings => ({ ratings }) ))
+    .then(compose( merge(data), intoObj('ratings') ))
 }
 
 export const sideloadByMany = curry(function (type, sideProp, dataProp, data) {

@@ -1,0 +1,18 @@
+{ "name": "aocmulti-lobby-server"
+, "version": "0.0.1-dev"
+, "dependencies":
+  { "debug": "2.x"
+  , "express": "4.x"
+  , "knex": "^0.7.3"
+  , "mysql": "^2.5.4"
+  , "lodash": "2.x"
+  , "curry": "1.x"
+  , "lambdajs": "1.x"
+  , "node-uuid": "1.x"
+  , "bluebird": "2.x" }
+, "devDependencies":
+  { "6to5": "2.x" }
+, "scripts":
+  { "6to5": "node ./node_modules/6to5/bin/6to5/index.js src --out-dir lib"
+  , "start": "DEBUG=aocmulti:* ./node_modules/6to5/bin/6to5-node src/server" }
+}

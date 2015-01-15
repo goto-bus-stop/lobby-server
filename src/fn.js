@@ -36,6 +36,8 @@ const renameProp = curry(function (from, to, obj) {
 const partial = curry(function (fn, args) {
   return (...args2) => fn(...args, ...args2)
 })
+//+ intoObj :: String -> a -> Object
+const intoObj = curry((prop, value) => ({ [prop]: value }))
 
 export default merge({
   Maybe,
@@ -47,7 +49,8 @@ export default merge({
   flip,
   merge,
   renameProp,
-  partial
+  partial,
+  intoObj
 }, lambdajs)
 
 export function install(global) {

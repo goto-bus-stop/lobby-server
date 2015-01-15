@@ -2,7 +2,7 @@ import { Router } from 'express'
 import uuid from 'node-uuid'
 import db from '../knex'
 import util from './util'
-import { compose, curry, renameProp, filter } from '../fn'
+import { compose, curry, renameProp, filter, intoObj } from '../fn'
 
 const debug = require('debug')('aocmulti:api:rooms')
 
@@ -12,14 +12,14 @@ const createSessionRecord = curry((roomId, playerId) => {
 
 const gameRoomColumns = [ 'id', 'title', 'descr', 'maxPlayers', 'ladderId', 'hostId', 'status' ]
 
-let app = Router()
+export default let app = Router()
 
 app.get('/:game_id', function (req, res) {
   const id = req.params.game_id
 
   db('gameRooms').column(gameRoomColumns).where('id', id).first()
     .then(renameProp('hostId', 'host'))
-    .then(room => ({ room }))
+    .then(intoObj('room'))
     .then(util.sideloadPlayers)
 
     .then(util.sendResponse(res))
@@ -28,7 +28,7 @@ app.get('/:game_id', function (req, res) {
 
 app.get('/', function (req, res) {
   db('gameRooms').select(gameRoomColumns)
-    .then(rooms => ({ rooms }))
+    .then(intoObj('rooms'))
     .then(util.sideloadPlayers)
 
     .then(util.sendResponse(res))
@@ -67,7 +67,7 @@ app.post('/', function (req, res) {
   , ip: req.ip
   }
   api.createGame(options)
-    .then(room => ({ room }))
+    .then(intoObj('room'))
 
     .then(util.sendResponse(res))
     .catch(util.sendError(500, 'Could not host game room', res))
@@ -87,5 +87,3 @@ app.post('/:room_id/join', function (req, res) {
 app.post('/:game_id/leave', function (req, res) {
 
 })
-
-export default app
