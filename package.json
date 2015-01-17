@@ -9,7 +9,8 @@
   , "curry": "1.x"
   , "lambdajs": "1.x"
   , "node-uuid": "1.x"
-  , "bluebird": "2.x" }
+  , "bluebird": "2.x"
+  , "ircs": "0.x" }
 , "devDependencies":
   { "6to5": "2.x" }
 , "scripts":
