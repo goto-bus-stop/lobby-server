@@ -24,6 +24,7 @@
     "morgan": "",
     "mysql": "2.x",
     "node-uuid": "^1.4.1",
+    "object-assign": "^2.0.0",
     "passport": "~0.2",
     "passport-local": "1.x",
     "passport-openid": "^0.3.1",
