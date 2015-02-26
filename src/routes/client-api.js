@@ -11,10 +11,10 @@ const sql = require('../sql')
 
 const USEP = '\x1F'
 
-module.exports = function () {
-  
+export default function () {
+
   let app = express.Router()
-  
+
   app.use(function (req, res, next) {
     debug(req.url)
     next()

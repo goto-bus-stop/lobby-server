@@ -2,13 +2,6 @@
 
 const debug = require('debug')('aocmulti:server')
 
-// require() debug
-const _r = require
-global.require = require = function (path) {
-  debug('require', path)
-  return _r(path)
-}
-
 debug('starting')
 
 require('./fn').install(global)
@@ -17,7 +10,7 @@ const http = require('http')
     , path = require('path')
     , fs = require('fs')
 
-// Web site stuff
+    // Web site stuff
     , express = require('express')
     , cookieParser = require('cookie-parser')
     , bodyParser = require('body-parser')
@@ -45,7 +38,7 @@ const app = express()
 // meh
 app.disable('x-powered-by')
 
-if (true|| config.env === 'production') {
+if (true || config.env === 'production') {
   const RedisStore = require('connect-redis')(session)
   app.sessionStore = new RedisStore(config.redis)
 }
@@ -55,7 +48,6 @@ else {
 
 app.passport = pp
 
-//app.use(logger())
 app.use(cookieParser())
 app.use(bodyParser.urlencoded({ extended: true }))
 app.use(bodyParser.json())
@@ -73,8 +65,8 @@ app.use(pp.initialize())
 app.use(pp.session())
 
 // View stuff
-app.engine('handlebars', function (view, options, callback) {
-  fs.readFile(view, { encoding: 'utf8' }, function (err, hbs) {
+app.engine('handlebars', (view, options, callback) => {
+  fs.readFile(view, { encoding: 'utf8' }, (err, hbs) => {
     if (err) return callback(err)
     callback(null, Handlebars.compile(hbs)(options))
   })
@@ -92,7 +84,7 @@ app.use('/_', require('./routes/web-api')())
 app.use('/client', require('./routes/client-api')())
 
 // static
-app.use(express.static(__dirname + '/public'))
+app.use(express.static(path.join(__dirname, 'public')))
 
 const server = http.createServer(app)
 if (config.socket) {
@@ -100,11 +92,6 @@ if (config.socket) {
   require('./socket-api')(app, io)
 }
 
-server.listen(config.port, function () {
+server.listen(config.port, () => {
   console.log('Listening on port %d', server.address().port)
-  debug('memusage: ' + (process.memoryUsage().rss / 1024 / 1024).toPrecision(4) + 'MB')
 })
-
-setInterval(function () {
-  debug('memusage: ' + (process.memoryUsage().rss / 1024 / 1024).toPrecision(4) + 'MB')
-}, 30000)

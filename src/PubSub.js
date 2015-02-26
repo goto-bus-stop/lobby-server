@@ -77,4 +77,4 @@ PubSub.prototype.publish = function (evt, args) {
   return this
 }
 
-module.exports = new PubSub()
+export default new PubSub()

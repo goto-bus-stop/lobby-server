@@ -16,7 +16,7 @@ const gameRoomColumns = [ 'id', 'title', 'descr', 'maxPlayers', 'ladderId', 'hos
 const cleanRoomRecord = compose(renameProp('hostId', 'host'),
                                 renameProp('ladderId', 'ladder'))
 
-module.exports = function () {
+export default function () {
 
   let app = express.Router()
 

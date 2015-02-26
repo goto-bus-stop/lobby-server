@@ -9,21 +9,21 @@ const api = require('../api')
     , store = require('../store')
     , express = require('express')
 
-module.exports = function () {
+export default function () {
 
   let app = express.Router()
 
   function indexRoute(req, res) {
     if (req.isAuthenticated()) {
-      var baseDir = path.join(__dirname, '../templates')
-      var templates = glob(baseDir + '{/**/*,*}.handlebars').then(
+      let baseDir = path.join(__dirname, '../templates')
+      let templates = glob(`${baseDir}{/**/*,*}.handlebars`).then(
         compose(
-          filter(compose(function (c) { return c !== '@' }, charAt(0))),
+          filter(compose(c => c !== '@', charAt(0))),
           map(compose(replace(/\.handlebars$/, ''), substring(baseDir.length + 1)))
         )
       )
       Promise.all([ store.findAll('ladder'), store.findAll('server'), templates ])
-        .thenCombine(function (ladders, servers, templates) {
+        .thenCombine((ladders, servers, templates) => {
           res.render('@layout', {
             content: '{{outlet}}',
             uid: req.session.uid,
@@ -38,7 +38,7 @@ module.exports = function () {
     }
   }
   app.get('/', indexRoute)
-  app.post('/', pp.authenticate('local'), function (req, res) {
+  app.post('/', pp.authenticate('local'), (req, res) => {
     req.session.uid = req.session.passport.user
     res.redirect('/')
   })

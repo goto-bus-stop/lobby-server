@@ -4,6 +4,8 @@ const Promise = require('promise')
 
 require('./fn').install(global)
 
+export default Promise
+
 /**
  * 
  */
@@ -47,5 +49,3 @@ Promise.prototype.thenSplit = function (functions) {
 Promise.prototype.thenCombine = function (cb) {
   return this.then(function (arr) { return cb.apply(this, arr) })
 }
-
-module.exports = Promise

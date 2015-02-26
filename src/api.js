@@ -12,7 +12,7 @@ const _ = require('lodash')
 const writeDebugMessage = compose(console.error.bind(console), pluck('stack'))
 
 const cleanRatingRecord = compose(without('userId'), without('rating'))
-const addRatings = function (user) {
+export function addRatings(user) {
   debug('addRatings', user)
   user.ratings = {}
   return store.queryMany('rating', { userId: user.id })
@@ -23,7 +23,7 @@ const addRatings = function (user) {
     .then(constant(user))
     .catch(writeDebugMessage)
 }
-const addRatingsA = function (users) {
+export function addRatingsA(users) {
   if (!users || users.length === 0) return users
   debug('addRatingsA', users.length)
   let usersMap = {}
@@ -41,7 +41,7 @@ const addRatingsA = function (users) {
     .catch(writeDebugMessage)
 }
 
-const createGame = function (options) {
+export function createGame(options) {
   // options { title, descr, maxPlayers, ladderId, hostId }
   return store.insert('gameRoom', subset([ 'title', 'descr', 'maxPlayers', 'ladderId', 'hostId' ], options))
     .then(isolate(function (x) { PubSub.publish('gameRoom:created', x) }))
@@ -51,7 +51,7 @@ const createGame = function (options) {
 const createSessionRecord = curry(function (roomId, playerId) {
   return { seskey: uuid.v4({}, new Buffer(16)), roomId: roomId, userId: playerId }
 })
-const startGame = function (id) {
+export function startGame(id) {
   let hostSession
   return Promise.all([
     store.update('gameRoom', { id: id }, { status: 'playing' }),
@@ -66,7 +66,7 @@ const startGame = function (id) {
   })
   .catch(writeDebugMessage)
 }
-const cleanupRooms = function () {
+export function cleanupRooms() {
   return sql.query('SELECT id ' +
                    'FROM gameRooms ' +
                    'WHERE id NOT IN(' +
@@ -83,7 +83,7 @@ const cleanupRooms = function () {
       }
     })
 }
-const joinRoom = function (uid, rid) {
+export function joinRoom(uid, rid) {
   return store.find('user', uid, [ 'roomId' ])
     .then(function (user) {
       if (user.roomId != null && user.roomId != rid) {
@@ -99,7 +99,7 @@ const joinRoom = function (uid, rid) {
     .then(constant(true))
     .catch(writeDebugMessage)
 }
-const leaveRoom = function (uid) {
+export function leaveRoom(uid) {
   let rid
   debug('user leaving room', 'userid:', uid)
   return store.find('user', uid, [ 'roomId' ])
@@ -130,7 +130,7 @@ const leaveRoom = function (uid) {
     .finally(cleanupRooms)
 }
 
-const online = function (uid) {
+export function online(uid) {
   return store.queryMany('webSession', { userId: uid })
     .then(function (res) {
       if (res.length === 0) {
@@ -139,26 +139,13 @@ const online = function (uid) {
       }
     })
 }
-const offline = function (uid) {
+export function offline(uid) {
   return store.query('webSession', { userId: uid }, [ 'id' ])
     .then(pluck('id'))
     .then(store.destroy('webSession'))
     .then(function () { PubSub.publish('onlinePlayers:userLeft', uid) })
 }
-const getOnlineUsers = function (sid) {
+export function getOnlineUsers(sid) {
   return sql.query('SELECT u.* FROM users u, webSessions o WHERE u.id = o.userId AND o.serverId = ?', [ sid ])
     .catch(writeDebugMessage)
 }
-
-exports.createGame = createGame
-exports.startGame = startGame
-exports.joinRoom = joinRoom
-exports.leaveRoom = leaveRoom
-exports.cleanupRooms = cleanupRooms
-
-exports.online = online
-exports.offline = offline
-exports.getOnlineUsers = getOnlineUsers
-
-exports.addRatings = addRatings
-exports.addRatingsA = addRatingsA
