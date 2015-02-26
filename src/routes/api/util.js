@@ -4,7 +4,7 @@ const store = require('../../store')
     , debug = require('debug')('aocmulti:routes:api:util')
     , _ = require('lodash')
 
-exports.sideload = function (type, from, prop) {
+export function sideload(type, from, prop) {
   return function (data) {
     var loadIds = data[from].reduce(function (a, item) {
       return a.concat(item[prop])
@@ -16,7 +16,7 @@ exports.sideload = function (type, from, prop) {
   }
 }
 
-exports.sideloadPlayers = function (data) {
+export function sideloadPlayers(data) {
   let rooms = data.rooms || [ data.room ]
   rooms.forEach(function (room) {
     if (!room.players) {
@@ -36,7 +36,7 @@ exports.sideloadPlayers = function (data) {
     .catch(debug.bind(null, 'sideloadPlayers'))
 }
 
-exports.sideloadByMany = curry(function (type, sideProp, dataProp, data) {
+export const sideloadByMany = curry(function (type, sideProp, dataProp, data) {
 
   return store.queryMany(type, singleton(sideProp, map(pluck('id'), models)))
     .then(function (sideloaded) {
@@ -49,14 +49,14 @@ exports.sideloadByMany = curry(function (type, sideProp, dataProp, data) {
     .catch(debug)
 })
 
-exports.sendError = function (code, msg, res) {
+export function sendError(code, msg, res) {
   return function (err) {
     res.writeHead(code, { 'Content-type': 'application/json' })
     res.end(JSON.stringify({ type: 'error', error: err, msg: msg }))
   }
 }
 
-exports.sendResponse = function (res) {
+export function sendResponse(res) {
   return function (obj) {
     res.writeHead(200, { 'Content-type': 'application/json' })
     res.end(JSON.stringify(obj, null, '  '))

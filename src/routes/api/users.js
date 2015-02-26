@@ -9,7 +9,7 @@ const express = require('express')
 const userColumns = [ 'id', 'username', 'country', 'status', 'roomId' ]
 const cleanUserRecord = subset(userColumns)
 
-module.exports = function () {
+export default function () {
 
   let app = express.Router()
 

@@ -8,34 +8,34 @@ const api = require('../api')
 
 const cleanModRecord = renameProp('userId', 'author')
 
-const sendError = function (code, msg, res) {
-  return function (err) {
+const sendError = (code, msg, res) => {
+  return err => {
     res.writeHead(code, { 'Content-type': 'application/json' })
     res.end(JSON.stringify({ type: 'error', error: err, msg: msg }))
   }
 }
-const sendResponse = function (res) {
-  return function (obj) {
+const sendResponse = res => {
+  return obj => {
     res.writeHead(200, { 'Content-type': 'application/json' })
     res.end(JSON.stringify(obj, null, '  '))
   }
 }
 
-module.exports = function () {
+export default function () {
 
   let app = express.Router()
 
   app.use('/rooms', require('./api/rooms')())
   app.use('/users', require('./api/users')())
 
-  app.get('/mods/:mod_id', function (req, res) {
+  app.get('/mods/:mod_id', (req, res) => {
     store.find('mod', req.params.mod_id)
       .then(cleanModRecord)
       .then(singleton('mod'))
       .then(sendResponse(res))
       .catch(sendError(404, 'Could not find mod', res))
   })
-  app.get('/mods', function (req, res) {
+  app.get('/mods', (req, res) => {
     store.findAll('mod')
       .then(map(cleanModRecord))
       .thenSplit([
@@ -46,7 +46,7 @@ module.exports = function () {
       .then(sendResponse(res))
       .catch(sendError(404, 'Could not find mods', res))
   })
-  
+
   return app
 
 }
