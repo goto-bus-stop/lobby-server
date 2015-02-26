@@ -11,23 +11,6 @@ const _ = require('lodash')
 //+ writeDebugMessage :: Error -> IO
 const writeDebugMessage = compose(console.error.bind(console), pluck('stack'))
 
-const addPlayers = function (room) {
-  return store.queryMany('user', { roomId: room.id }, [ 'id' ])
-    .then(map(pluck('id')))
-    .then(compose(merge(room), singleton('players')))
-}
-const addPlayersA = function (rooms) {
-  if (!rooms || rooms.length === 0) return rooms
-  let roomsMap = _.indexBy(rooms, 'id')
-  return store.queryMany('user', { roomId: map(pluck('id'), rooms) })
-    .then(forEach(function (user) {
-      const thisRoom = roomsMap[user.roomId]
-      thisRoom.players = (thisRoom.players || []).concat([ user.id ])
-    }))
-    .then(constant(rooms))
-    .catch(writeDebugMessage)
-}
-
 const cleanRatingRecord = compose(without('userId'), without('rating'))
 const addRatings = function (user) {
   debug('addRatings', user)
@@ -74,6 +57,7 @@ const startGame = function (id) {
     store.update('gameRoom', { id: id }, { status: 'playing' }),
     store.queryMany('user', { roomId: id })
   ])
+  .then(isolate(debug.bind(null, 'players in ' + id)))
   .then(pluck(1))
   .then(function (players) {
     const sessions = map(compose(createSessionRecord(id), pluck('id')), players)
@@ -178,5 +162,3 @@ exports.getOnlineUsers = getOnlineUsers
 
 exports.addRatings = addRatings
 exports.addRatingsA = addRatingsA
-exports.addPlayers = addPlayers
-exports.addPlayersA = addPlayersA
