@@ -10,13 +10,14 @@ const api = require('./api')
     , config = require('../config.json')
     , Promise = require('./promise')
     , store = require('./store')
+    , _ = require('lodash')
     , userCache = require('lru-cache')({
         max: 200,
         maxAge: 1000 * 65
       })
 
-const { isolate, constant, pluck } = require('./fn')
-const { compose } = require('lambdajs')
+const { isolate, constant } = require('./fn')
+const pluck = require('propprop')
 
 const _authError = 'Username/Password combination not found'
 const comparePassword = Promise.denodeify(bcrypt.compare)
@@ -49,7 +50,7 @@ export default function (pp) {
   if (config.auth.steam) {
     pp.use(new SteamStrategy(config.auth.steam, (openid, user, done) => {
       store.query('openid', { openid: openid })
-        .then(compose(store.find('user'), pluck('userId')))
+        .then(_.compose(store.find('user'), pluck('userId')))
         .catch(e => {
           return store.insert('user', user)
             .then(newRecord => {

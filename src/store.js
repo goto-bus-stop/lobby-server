@@ -3,9 +3,10 @@
 const sql = require('./sql')
     , SqlString = require('mysql/lib/protocol/SqlString')
     , debug = require('debug')('aocmulti:mysql-store')
+    , _ = require('lodash')
 
-const { append, pluck, values } = require('./fn')
-const { compose, map } = require('lambdajs')
+const { append, values } = require('./fn')
+const pluck = require('propprop')
 const curry = require('curry')
 
 const fields = (args, ct) => args.length === ct ? args[ct - 1].join(', ') : '*'
@@ -62,7 +63,7 @@ const mysqlStore = function (sql) {
     }),
     insertMany: curry(function (type, records) {
       let recKeys = Object.keys(records[0])
-        , recValues = map(compose(sql.mysql.escape, values), records)
+        , recValues = records.map(_.compose(sql.mysql.escape, values))
       return sql.query('INSERT INTO ?? (??) VALUES (' + join('), (', recValues) + ')', [ table(type), recKeys ])
     }),
     destroy: curry(function (type, id) {

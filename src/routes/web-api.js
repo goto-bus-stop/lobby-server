@@ -6,8 +6,9 @@ const api = require('../api')
     , express = require('express')
     , _ = require('lodash')
 
-const { singleton, renameProp, pluck } = require('../fn')
-const { map, compose } = require('lambdajs')
+const { singleton, renameProp } = require('../fn')
+const pluck = require('propprop')
+const { map } = require('lambdajs')
 const assign = require('object-assign')
 
 const cleanModRecord = renameProp('userId', 'author')
@@ -44,7 +45,7 @@ export default function () {
       .then(map(cleanModRecord))
       .thenSplit([
         singleton('mods')
-      , compose(map(singleton('users')), store.findMany('user'), map(pluck('author')))
+      , _.compose(map(singleton('users')), store.findMany('user'), map(pluck('author')))
       ])
       .then(objects => assign({}, ...objects))
       .then(sendResponse(res))

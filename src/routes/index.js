@@ -8,8 +8,9 @@ const api = require('../api')
     , glob = Promise.denodeify(require('glob'))
     , store = require('../store')
     , express = require('express')
+    , _ = require('lodash')
 
-const { charAt, filter, map, compose, replace, substring } = require('lambdajs')
+const { charAt, filter, map, replace, substring } = require('lambdajs')
 const { partial, singleton } = require('../fn')
 
 export default function () {
@@ -20,9 +21,9 @@ export default function () {
     if (req.isAuthenticated()) {
       let baseDir = path.join(__dirname, '../templates')
       let templates = glob(`${baseDir}{/**/*,*}.handlebars`).then(
-        compose(
-          filter(compose(c => c !== '@', charAt(0))),
-          map(compose(replace(/\.handlebars$/, ''), substring(baseDir.length + 1)))
+        _.compose(
+          filter(_.compose(c => c !== '@', charAt(0))),
+          map(_.compose(replace(/\.handlebars$/, ''), substring(baseDir.length + 1)))
         )
       )
       Promise.all([ store.findAll('ladder'), store.findAll('server'), templates ])
@@ -37,7 +38,7 @@ export default function () {
         })
     }
     else {
-      store.findAll('server').then(compose(partial(res.render.bind(res), [ '@login' ]), singleton('servers')))
+      store.findAll('server').then(_.compose(partial(res.render.bind(res), [ '@login' ]), singleton('servers')))
     }
   }
   app.get('/', indexRoute)

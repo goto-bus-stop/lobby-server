@@ -5,14 +5,13 @@ const store = require('../store')
     , readFile = Promise.denodeify(require('fs').readFile)
     , { join: joinPath } = require('path')
     , express = require('express')
+    , _ = require('lodash')
 
-const { await, partial, singleton } = require('../fn')
-const { compose } = require('lambdajs')
+const { singleton } = require('../fn')
 const curry = require('curry')
 
 const insertUser = store.insert('user')
-const readCountries = compose(await(JSON.parse),
-                              partial(readFile, [ joinPath(__dirname, '../../countries.json') ]))
+const readCountries = () => readFile(joinPath(__dirname, '../../countries.json')).then(JSON.parse)
 const renderTemplate = curry((res, tpl, locals) => res.render(tpl, locals))
 
 export default function () {
@@ -22,7 +21,9 @@ export default function () {
   const countries = readCountries()
 
   const registerRoute = (req, res) => {
-    await(compose(renderTemplate(res, '@register'), singleton('countries')), countries)
+    countries
+      .then(singleton('countries'))
+      .then(renderTemplate(res, '@register'))
   }
 
   app.get('/register', registerRoute)

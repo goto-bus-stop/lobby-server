@@ -16,18 +16,14 @@ Mappable.prototype.map = function (fn) {
   return this.val.map ? map(fn, this.val) : fn(this.val)
 }
 
-//+ curry :: Function -> Function
 const curry = require('curry')
+const pluck = require('propprop')
 const { reduce, map } = require('lambdajs')
 
-//+ pluck :: String -> a -> b
-export const pluck = curry(function (prop, obj) { return obj[prop] })
 //+ toInt :: a -> Number
 export const toInt = x => parseInt(x, 10)
 //+ toJSON :: a -> Object
 export const toJSON = o => o.toJSON()
-//+ await :: (a -> b) -> [a] -> [b]
-export const await = curry((fn, subj) => subj.then(fn))
 //+ mapAny :: (a -> b) -> [a]|a -> [b]|b
 export const mapAny = curry((fn, a) => a.map ? map(fn, a) : fn(a))
 //+ ident :: _ -> a -> a

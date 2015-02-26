@@ -9,9 +9,10 @@ const PubSub = require('./PubSub')
     , cookieParser = require('cookie-parser')()
     , debug = require('debug')('aocmulti:socket-api')
     , uuid = require('node-uuid')
+    , _ = require('lodash')
 
-const { isolate, pluck } = require('./fn')
-const { compose } = require('lambdajs')
+const { isolate } = require('./fn')
+const pluck = require('propprop')
 
 const Errors = {
   InvalidRoomError: { type: 'error', msg: 'invalid room' }
@@ -187,7 +188,7 @@ export default function (app, io) {
             store.query('gameSession', { userId: session.uid })
               .then(isolate(debug.bind(null, 'gameSession')))
           )
-          .then(compose(uuid.unparse, pluck('seskey')))
+          .then(_.compose(uuid.unparse, pluck('seskey')))
           .nodeify(cb)
       }, 1000)
     })

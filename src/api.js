@@ -8,14 +8,15 @@ const _ = require('lodash')
     , store = require('./store')
     , uuid = require('node-uuid')
 
-const { pluck, without, isolate, constant, subset } = require('./fn')
-const { compose, forEach, map } = require('lambdajs')
+const { without, isolate, constant, subset } = require('./fn')
+const pluck = require('propprop')
+const { forEach, map } = require('lambdajs')
 const curry = require('curry')
 
 //+ writeDebugMessage :: Error -> IO
-const writeDebugMessage = compose(console.error.bind(console), pluck('stack'))
+const writeDebugMessage = _.compose(console.error.bind(console), pluck('stack'))
 
-const cleanRatingRecord = compose(without('userId'), without('rating'))
+const cleanRatingRecord = _.compose(without('userId'), without('rating'))
 export function addRatings(user) {
   debug('addRatings', user)
   user.ratings = {}
@@ -64,7 +65,7 @@ export function startGame(id) {
   .then(isolate(debug.bind(null, 'players in ' + id)))
   .then(pluck(1))
   .then(function (players) {
-    const sessions = map(compose(createSessionRecord(id), pluck('id')), players)
+    const sessions = players.map(_.compose(createSessionRecord(id), pluck('id')))
     return store.insertMany('gameSession', sessions)
       .then(constant(sessions))
   })

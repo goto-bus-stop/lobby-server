@@ -5,8 +5,9 @@ const store = require('../../store')
     , _ = require('lodash')
 
 const curry = require('curry')
-const { pluck, isolate, singleton } = require('../../fn')
-const { map, compose, forEach } = require('lambdajs')
+const pluck = require('propprop')
+const { isolate, singleton } = require('../../fn')
+const { map, forEach } = require('lambdajs')
 const assign = require('object-assign')
 
 export function sideload(type, from, prop) {

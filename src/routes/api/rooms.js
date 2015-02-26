@@ -7,18 +7,20 @@ const express = require('express')
     , api = require('../../api')
     , util = require('./util')
     , debug = require('debug')('aocmulti:api:rooms')
+    , _ = require('lodash')
 
 const curry = require('curry')
-const { renameProp, singleton, pluck, toInt } = require('../../fn')
-const { compose, map, filter } = require('lambdajs')
+const pluck = require('propprop')
+const { renameProp, singleton, toInt } = require('../../fn')
+const { map, filter } = require('lambdajs')
 
 const createSessionRecord = curry(function (roomId, playerId) {
   return { seskey: uuid.v4({}, new Buffer(16)), roomId: roomId, userId: playerId }
 })
 
 const gameRoomColumns = [ 'id', 'title', 'descr', 'maxPlayers', 'ladderId', 'hostId', 'status' ]
-const cleanRoomRecord = compose(renameProp('hostId', 'host'),
-                                renameProp('ladderId', 'ladder'))
+const cleanRoomRecord = _.compose(renameProp('hostId', 'host'),
+                                  renameProp('ladderId', 'ladder'))
 
 export default function () {
 
@@ -46,13 +48,13 @@ export default function () {
     // set room to playing
     store.update('gameRoom', { id: id }, { status: 'playing' })
       // get players
-      .then(compose(store.queryMany('user'), singleton('roomId')))
+      .then(_.compose(store.queryMany('user'), singleton('roomId')))
       // create player sessions
-      .then(map(compose(createSessionRecord(id), pluck('id'))))
+      .then(map(_.compose(createSessionRecord(id), pluck('id'))))
       // store player sessions
       .thenSplit([
         store.insertMany('gameSession'),
-        compose(pluck(0), filter(session => session.userId === myId))
+        _.compose(pluck(0), filter(session => session.userId === myId))
       ])
       .thenCombine((ins, mySession) => uuid.unparse(mySession.seskey))
       .then(isolate(() => { PubSub.publish('game:start', id) }))
