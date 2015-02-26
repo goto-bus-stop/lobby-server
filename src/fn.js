@@ -1,9 +1,6 @@
 'use strict'
 
-const us = require('lodash')
-    , lambdajs = require('lambdajs')
-
-const Maybe = function (val) {
+export function Maybe(val) {
   if (!(this instanceof Maybe)) return new Maybe(val)
   this.val = val
 }
@@ -11,7 +8,7 @@ Maybe.prototype.map = function (fn) {
   return this.val !== null ? Maybe(map(fn, this.val)) : Maybe(this.val)
 }
 
-const Mappable = function (val) {
+export function Mappable(val) {
   if (!(this instanceof Mappable)) return new Mappable(val)
   this.val = val
 }
@@ -21,94 +18,65 @@ Mappable.prototype.map = function (fn) {
 
 //+ curry :: Function -> Function
 const curry = require('curry')
+const { reduce, map } = require('lambdajs')
 
 //+ pluck :: String -> a -> b
-const pluck = curry(function (prop, obj) { return obj[prop] })
+export const pluck = curry(function (prop, obj) { return obj[prop] })
 //+ toInt :: a -> Number
-const toInt = function (x) { return parseInt(x, 10) }
-//+ toArray :: a -> [b]
-const toArray = us.toArray
+export const toInt = x => parseInt(x, 10)
 //+ toJSON :: a -> Object
-const toJSON = function (o) { return o.toJSON() }
+export const toJSON = o => o.toJSON()
 //+ await :: (a -> b) -> [a] -> [b]
-const await = curry(function (fn, subj) { return subj.then(fn) })
+export const await = curry((fn, subj) => subj.then(fn))
 //+ mapAny :: (a -> b) -> [a]|a -> [b]|b
-const mapAny = curry(function (fn, a) { return a.map ? map(fn, a) : fn(a) })
+export const mapAny = curry((fn, a) => a.map ? map(fn, a) : fn(a))
 //+ ident :: _ -> a -> a
-const ident = function () { return function (a) { return a } }
+export function ident() { return a => a }
 //+ constant :: a -> _ -> a
-const constant = function (a) { return function () { return a } }
+export const constant = function (a) { return () => a }
 //+ flip :: (a -> b -> c) -> (b -> a -> c)
-const flip = function (f) { return curry(function (a, b) { return f(b, a) }) }
-//+ merge :: Object -> Object -> Object
-const merge = curry(function (a, b) {
-  let result = {}
-  lambdajs.forEach(function (key) { result[key] = a[key] }, keys(a))
-  lambdajs.forEach(function (key) { result[key] = b[key] }, keys(b))
-  return result
-})
-//+ keys :: Object -> [String]
-const keys = Object.keys
+export const flip = function (f) { return curry((a, b) => f(b, a)) }
 //+ values :: Object -> [a]
-const values = function (obj) { return map(flip(pluck)(obj), keys(obj)) }
+export const values = function (obj) { return map(flip(pluck)(obj), Object.keys(obj)) }
 //+ isIn :: [a] -> a -> Boolean
-const isIn = curry(function (arr, x) { return arr.indexOf(x) > -1 })
+export const isIn = curry((arr, x) => arr.indexOf(x) > -1)
 //+ subset :: [String] -> Object -> Object
-const subset = curry(function (sub, obj) { return reduce(function (newObj, key) { newObj[key] = obj[key]; return newObj }, {}, sub) })
+export const subset = curry((sub, obj) => {
+  return reduce((newObj, key) => { newObj[key] = obj[key]; return newObj }, {}, sub)
+})
 //+ without :: String -> Object -> Object
-const without = curry(function (prop, obj) {
-  return reduce(function (newObj, key) { if (key !== prop) newObj[key] = obj[key]; return newObj }, {}, keys(obj))
+export const without = curry(function (prop, obj) {
+  return reduce((newObj, key) => {
+    if (key !== prop) newObj[key] = obj[key];
+    return newObj
+  }, {}, Object.keys(obj))
 })
 //+ renameProp :: String -> String -> Object -> Object
-const renameProp = curry(function (from, to, obj) {
-   return reduce(function (newObj, key) { newObj[key === from ? to : key] = obj[key]; return newObj }, {}, keys(obj))
+export const renameProp = curry(function (from, to, obj) {
+   return reduce((newObj, key) => {
+     newObj[key === from ? to : key] = obj[key];
+     return newObj
+   }, {}, Object.keys(obj))
 })
 //+ partial :: (a -> b) -> [a] -> (a -> b)
-const partial = curry(function (fn, args) {
-  const self = this
-  return function () { return fn.apply(self, concat(toArray(args), toArray(arguments))) }
+export const partial = curry(function (fn, args) {
+  return (...args2) => fn(...args, ...args2)
 })
 //+ singleton :: String -> _ -> Object
-const singleton = curry(function (k, v) { let o = {}; return o[k] = v, o })
+export const singleton = curry(function (k, v) { return { [k]: v } })
 //+ isolate :: (a -> _) -> b -> (a -> b)
-const isolate = curry(function (fn, x) { fn(x); return x })
-//+ append :: [a] -> [a] -> [a]
-const append = curry(function (suffix, arr) { return arr.concat(suffix) })
-//+ associate :: [String] -> [a] -> ?
-const associate = curry(function (keys, values) {
-  return reduce(function (obj, key, i) { obj[key] = values[i]; return obj }, {}, keys)
+export const isolate = curry(function (fn, x) {
+  fn(x)
+  return x
 })
-
-const fn = merge({
-  Maybe: Maybe,
-  Mappable: Mappable,
-
-  curry: curry,
-  pluck: pluck,
-  toInt: toInt,
-  toArray: toArray,
-  toJSON: toJSON,
-  await: await,
-  mapAny: mapAny,
-  ident: ident,
-  keys: keys,
-  values: values,
-  constant: constant,
-  flip: flip,
-  merge: merge,
-  subset: subset,
-  without: without,
-  renameProp: renameProp,
-  partial: partial,
-  singleton: singleton,
-  isolate: isolate,
-  append: append,
-  associate: associate
-}, lambdajs)
-
-module.exports = us.clone(fn)
-module.exports.install = function (global) {
-  for (let i in fn) if (fn.hasOwnProperty(i)) {
-    global[i] = fn[i]
-  }
-}
+//+ append :: [a] -> [a] -> [a]
+export const append = curry(function (suffix, arr) {
+  return arr.concat(suffix)
+})
+//+ associate :: [String] -> [a] -> ?
+export const associate = curry(function (keys, values) {
+  return reduce((obj, key, i) => {
+    obj[key] = values[i]
+    return obj
+  }, {}, keys)
+})

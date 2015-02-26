@@ -9,6 +9,9 @@ const api = require('../api')
     , store = require('../store')
     , express = require('express')
 
+const { charAt, filter, map, compose, replace, substring } = require('lambdajs')
+const { partial, singleton } = require('../fn')
+
 export default function () {
 
   let app = express.Router()

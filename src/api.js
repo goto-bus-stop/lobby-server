@@ -8,6 +8,10 @@ const _ = require('lodash')
     , store = require('./store')
     , uuid = require('node-uuid')
 
+const { pluck, without, isolate, constant, subset } = require('./fn')
+const { compose, forEach, map } = require('lambdajs')
+const curry = require('curry')
+
 //+ writeDebugMessage :: Error -> IO
 const writeDebugMessage = compose(console.error.bind(console), pluck('stack'))
 
@@ -44,12 +48,12 @@ export function addRatingsA(users) {
 export function createGame(options) {
   // options { title, descr, maxPlayers, ladderId, hostId }
   return store.insert('gameRoom', subset([ 'title', 'descr', 'maxPlayers', 'ladderId', 'hostId' ], options))
-    .then(isolate(function (x) { PubSub.publish('gameRoom:created', x) }))
+    .then(isolate(x => { PubSub.publish('gameRoom:created', x) }))
     .catch(writeDebugMessage)
 }
 
 const createSessionRecord = curry(function (roomId, playerId) {
-  return { seskey: uuid.v4({}, new Buffer(16)), roomId: roomId, userId: playerId }
+  return { seskey: uuid.v4({}, Buffer(16)), roomId: roomId, userId: playerId }
 })
 export function startGame(id) {
   let hostSession

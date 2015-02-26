@@ -2,7 +2,7 @@
 
 const Promise = require('promise')
 
-require('./fn').install(global)
+const { isolate } = require('./fn')
 
 export default Promise
 
@@ -35,11 +35,8 @@ Promise.prototype.map = function (a, b, c) {
  * @return {Promise} Promise resolving to the results of the given functions.
  */
 Promise.prototype.thenSplit = function (functions) {
-  return this.then(function () {
-    var args = arguments
-    return Promise.all(functions.map(function (fn) {
-      return fn.apply(null, args)
-    }))
+  return this.then(function (...args) {
+    return Promise.all(functions.map(fn => fn(...args)))
   })
 }
 
@@ -47,5 +44,5 @@ Promise.prototype.thenSplit = function (functions) {
  * 
  */
 Promise.prototype.thenCombine = function (cb) {
-  return this.then(function (arr) { return cb.apply(this, arr) })
+  return this.then(arr => cb(...arr))
 }

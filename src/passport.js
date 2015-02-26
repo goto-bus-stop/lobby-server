@@ -9,12 +9,14 @@ const api = require('./api')
     , debug = require('debug')('aocmulti:passport')
     , config = require('../config.json')
     , Promise = require('./promise')
-    , fn = require('./fn')
     , store = require('./store')
     , userCache = require('lru-cache')({
         max: 200,
         maxAge: 1000 * 65
       })
+
+const { isolate, constant, pluck } = require('./fn')
+const { compose } = require('lambdajs')
 
 const _authError = 'Username/Password combination not found'
 const comparePassword = Promise.denodeify(bcrypt.compare)

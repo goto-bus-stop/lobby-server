@@ -6,6 +6,9 @@ const express = require('express')
     , _ = require('lodash')
     , util = require('./util')
 
+const { singleton, subset } = require('../../fn')
+const { map } = require('lambdajs')
+
 const userColumns = [ 'id', 'username', 'country', 'status', 'roomId' ]
 const cleanUserRecord = subset(userColumns)
 

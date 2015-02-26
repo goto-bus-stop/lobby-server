@@ -8,6 +8,10 @@ const express = require('express')
     , util = require('./util')
     , debug = require('debug')('aocmulti:api:rooms')
 
+const curry = require('curry')
+const { renameProp, singleton, pluck, toInt } = require('../../fn')
+const { compose, map, filter } = require('lambdajs')
+
 const createSessionRecord = curry(function (roomId, playerId) {
   return { seskey: uuid.v4({}, new Buffer(16)), roomId: roomId, userId: playerId }
 })
@@ -48,12 +52,10 @@ export default function () {
       // store player sessions
       .thenSplit([
         store.insertMany('gameSession'),
-        compose(pluck(0), filter(function (session) { return session.userId === myId }))
+        compose(pluck(0), filter(session => session.userId === myId))
       ])
-      .thenCombine(function (ins, mySession) {
-        return uuid.unparse(mySession.seskey)
-      })
-      .then(isolate(function () { PubSub.publish('game:start', id) }))
+      .thenCombine((ins, mySession) => uuid.unparse(mySession.seskey))
+      .then(isolate(() => { PubSub.publish('game:start', id) }))
       .then(util.sendResponse(res))
       .catch(util.sendError(500, 'Could not start game', res))
   })

@@ -2,13 +2,13 @@
 
 const store = require('../store')
     , Promise = require('../promise')
-    , fs = require('fs')
+    , readFile = Promise.denodeify(require('fs').readFile)
     , { join: joinPath } = require('path')
     , express = require('express')
-    , curry = require('curry')
 
-require('../fn').install(global)
-require('../fn/io').install(global)
+const { await, partial, singleton } = require('../fn')
+const { compose } = require('lambdajs')
+const curry = require('curry')
 
 const insertUser = store.insert('user')
 const readCountries = compose(await(JSON.parse),

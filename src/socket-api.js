@@ -1,7 +1,5 @@
 'use strict'
 
-require('./fn').install(global)
-
 const PubSub = require('./PubSub')
     , api = require('./api')
     , store = require('./store')
@@ -11,6 +9,9 @@ const PubSub = require('./PubSub')
     , cookieParser = require('cookie-parser')()
     , debug = require('debug')('aocmulti:socket-api')
     , uuid = require('node-uuid')
+
+const { isolate, pluck } = require('./fn')
+const { compose } = require('lambdajs')
 
 const Errors = {
   InvalidRoomError: { type: 'error', msg: 'invalid room' }
@@ -96,7 +97,7 @@ export default function (app, io) {
     io.in('room:' + rid).emit('game:launching')
   })
 
-  var disconnections = {}
+  let disconnections = {}
 
   io.use(cookieAuth(app))
 

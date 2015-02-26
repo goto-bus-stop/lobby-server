@@ -4,8 +4,6 @@ const debug = require('debug')('aocmulti:server')
 
 debug('starting')
 
-require('./fn').install(global)
-
 const http = require('http')
     , path = require('path')
     , fs = require('fs')

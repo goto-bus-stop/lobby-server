@@ -6,6 +6,10 @@ const api = require('../api')
     , express = require('express')
     , _ = require('lodash')
 
+const { singleton, renameProp, pluck } = require('../fn')
+const { map, compose } = require('lambdajs')
+const assign = require('object-assign')
+
 const cleanModRecord = renameProp('userId', 'author')
 
 const sendError = (code, msg, res) => {
@@ -42,7 +46,7 @@ export default function () {
         singleton('mods')
       , compose(map(singleton('users')), store.findMany('user'), map(pluck('author')))
       ])
-      .thenCombine(merge)
+      .then(objects => assign({}, ...objects))
       .then(sendResponse(res))
       .catch(sendError(404, 'Could not find mods', res))
   })
