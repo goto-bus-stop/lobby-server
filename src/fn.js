@@ -21,7 +21,6 @@ Mappable.prototype.map = function (fn) {
 
 //+ curry :: Function -> Function
 const curry = require('curry')
-Function.prototype.curry = function (x) { return x ? curry.to(x, this) : curry(this) }
 
 //+ pluck :: String -> a -> b
 const pluck = curry(function (prop, obj) { return obj[prop] })
@@ -83,7 +82,7 @@ const associate = curry(function (keys, values) {
 const fn = merge({
   Maybe: Maybe,
   Mappable: Mappable,
-  
+
   curry: curry,
   pluck: pluck,
   toInt: toInt,
