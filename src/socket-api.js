@@ -17,16 +17,16 @@ const Errors = {
 }
 
 const cookieAuth = function (app) {
-  return function (sock, next) {
+  return (sock, next) => {
     const req = sock.request
     // Use our newly obtained request to find our user session
     // (this was just copy-pasted from the `express-session` module)
-    cookieParser(req, {}, function () {
+    cookieParser(req, {}, () => {
       const rawCookie = req.cookies.sid
       const unsignedCookie = (0 == rawCookie.indexOf('s:'))
         ? signature.unsign(rawCookie.slice(2), config.cookie_secret)
         : rawCookie
-      app.sessionStore.get(unsignedCookie, function (err, session) {
+      app.sessionStore.get(unsignedCookie, (err, session) => {
         if (err) throw err
         if (session != null) {
           sock.session = session
@@ -42,54 +42,65 @@ const cookieAuth = function (app) {
   }
 }
 
-module.exports = function (app, io) {
+export default function (app, io) {
 
-  const subscribers = function (x) { return io.in('subscription:' + x) }
+  const subscribers = x => io.in(`subscription:${x}`)
   const passthruEvents = [ 'gameRoom:created', 'gameRoom:destroyed' ]
-  passthruEvents.forEach(function (event) {
-    PubSub.subscribe(event, function () {
-      io.emit.apply(io, concat([ event ], toArray(arguments)))
+  passthruEvents.forEach(event => {
+    PubSub.subscribe(event, (...args) => {
+      io.emit(event, ...args)
     })
   })
 
-  PubSub.subscribe('gameRoom:playerLeft', function (rid, uid) {
+  PubSub.subscribe('gameRoom:playerLeft', (rid, uid) => {
     debug('gameRoom:playerLeft', rid, uid)
     subscribers('gameRoom').emit('gameRoom:playerLeft', rid, uid)
-    store.find('user', uid).then(function (user) {
-      io.in('chat:' + rid).emit('chat:message:' +  rid, { uid: 0, room: rid, msg: user.username + ' left the room' })
+    store.find('user', uid).then(user => {
+      io.in(`chat:${rid}`).emit(`chat:message:${rid}`, {
+        uid: 0
+      , room: rid
+      , msg: `${user.username} left the room`
+      })
     })
   })
-  PubSub.subscribe('gameRoom:playerEntered', function (rid, uid) {
+  PubSub.subscribe('gameRoom:playerEntered', (rid, uid) => {
     debug('gameRoom:playerEntered', rid, uid)
     subscribers('gameRoom').emit('gameRoom:playerEntered', rid, uid)
-    store.find('user', uid).then(function (user) {
-      io.in('chat:' + rid).emit('chat:message:' +  rid, { uid: 0, room: rid, msg: user.username + ' joined the room' })
+    store.find('user', uid).then(user => {
+      io.in(`chat:${rid}`).emit(`chat:message:${rid}`, {
+        uid: 0
+      , room: rid
+      , msg: `${user.username} joined the room`
+      })
     })
   })
-  PubSub.subscribe('gameRoom:hostChanged', function (rid, uid) {
+  PubSub.subscribe('gameRoom:hostChanged', (rid, uid) => {
     debug('gameRoom:hostChanged', rid, uid)
     subscribers('gameRoom').emit('gameRoom:hostChanged', rid, uid)
     store.find('user', uid).then(function (user) {
-      io.in('chat:' + rid).emit('chat:message:' +  rid, { uid: 0, room: rid, msg: user.username + ' is now host' })
+      io.in(`chat:${rid}`).emit(`chat:message:${rid}`, {
+        uid: 0
+      , room: rid
+      , msg: `${user.username} is now host`
+      })
     })
   })
-  PubSub.subscribe('onlinePlayers:userJoined', function (uid) {
+  PubSub.subscribe('onlinePlayers:userJoined', uid => {
     subscribers('onlinePlayers').emit('onlinePlayers:joined', uid)
   })
-  PubSub.subscribe('onlinePlayers:userLeft', function (uid) {
+  PubSub.subscribe('onlinePlayers:userLeft', uid => {
     subscribers('onlinePlayers').emit('onlinePlayers:left', uid)
   })
 
-  PubSub.subscribe('gameRoom:ready', function (rid) {
+  PubSub.subscribe('gameRoom:ready', rid => {
     io.in('room:' + rid).emit('game:launching')
   })
 
   var disconnections = {}
 
   io.use(cookieAuth(app))
-//  io.use(pp.authenticate('local'))
 
-  io.on('connection', function (sock) {
+  io.on('connection', sock => {
     const session = sock.session
     let loggedUser
     if (session && session.uid) {
@@ -107,45 +118,49 @@ module.exports = function (app, io) {
       api.online(session.uid)
     }
 
-    sock.on('subscribe', function (channel, cb) {
-      debug('subscribing to ' + channel)
-      sock.join('subscription:' + channel)
+    sock.on('subscribe', (channel, cb) => {
+      debug('subscribing', channel)
+      sock.join(`subscription:${channel}`)
       cb && cb()
     })
-    sock.on('unsubscribe', function (channel, cb) {
-      debug('unsubscribing from ' + channel)
-      sock.leave('subscription:' + channel)
+    sock.on('unsubscribe', (channel, cb) => {
+      debug('unsubscribing', channel)
+      sock.leave(`subscription:${channel}`)
       cb && cb()
     })
 
     // api calls
-    sock.on('users:me', function (cb) {
+    sock.on('users:me', cb => {
       cb(null, session.uid)
     })
 
     // Chat API
     const chatDebug = require('debug')('aocmulti:socket-api:chat')
-    function roomValidate(room) {
-      return room === 'lobby' || /^\d+$/.test(room)
-    }
+    const roomValidate = room => room === 'lobby' || /^\d+$/.test(room)
     function chatSubscribe(room, cb) {
       if (!roomValidate(room)) return cb(Errors.InvalidRoomError)
-      chatDebug('subscribing to ' + room)
-      sock.join('chat:' + room)
+      chatDebug('subscribing', room)
+      sock.join(`chat:${room}`)
       cb(null)
     }
     function chatSend(room, message, cb) {
       if (!roomValidate(room)) return cb(Errors.InvalidRoomError)
-      loggedUser.then(function (u) {
-        chatDebug('sending to ' + room, message)
-        io.in('chat:' + room).emit('chat:message:' + room, { rid: room, msg: message, uid: session.uid, username: u.username, flagClassName: 'flag-icon-' + u.country })
+      loggedUser.then(u => {
+        chatDebug('sending', room, message)
+        io.in(`chat:${room}`).emit(`chat:message:${room}`, {
+          rid: room
+        , msg: message
+        , uid: session.uid
+        , username: u.username
+        , flagClassName: `flag-icon-${u.country}`
+        })
         cb(null)
       })
     }
     function chatUnsubscribe(room, cb) {
       if (!roomValidate(room)) return cb(Errors.InvalidRoomError)
-      chatDebug('unsubscribing from ' + room)
-      sock.leave('chat:' + room)
+      chatDebug('unsubscribing', room)
+      sock.leave(`chat:${room}`)
       cb(null)
     }
     sock.on('chat:subscribe', chatSubscribe)
@@ -160,20 +175,24 @@ module.exports = function (app, io) {
     })
     sock.on('gameRoom:launch', function (cb) {
       const room = session.rid
-      io.in('room:' + room).emit('chat:message:' + room, { rid: room, msg: 'Game starting…', uid: 0 })
-      setTimeout(function () {
+      io.in(`room:${room}`).emit(`chat:message:${room}`, {
+        rid: room
+      , msg: 'Game starting…'
+      , uid: 0
+      })
+      setTimeout(() => {
         api.startGame(room)
-          .then(function () {
-            return store.query('gameSession', { userId: session.uid })
+          .then(() =>
+            store.query('gameSession', { userId: session.uid })
               .then(isolate(debug.bind(null, 'gameSession')))
-          })
+          )
           .then(compose(uuid.unparse, pluck('seskey')))
           .nodeify(cb)
       }, 1000)
     })
     function _gameRoomStarting(rid) {
       if (rid == session.rid) {
-        store.query('gameSession', { userId: session.uid }).then(function (ses) {
+        store.query('gameSession', { userId: session.uid }).then(ses => {
           if (ses.status === 'waiting') {
             sock.emit('gameRoom:starting', uuid.unparse(ses.seskey))
           }
@@ -186,9 +205,9 @@ module.exports = function (app, io) {
     sock.on('debug:cleanup-rooms', api.cleanupRooms)
 
     // cleanup :D
-    sock.on('disconnect', function () {
+    sock.on('disconnect', () => {
       PubSub.unsubscribe('gameRoom:starting', _gameRoomStarting)
-      disconnections[session.uid] = setTimeout(function () {
+      disconnections[session.uid] = setTimeout(() => {
         api.leaveRoom(session.uid)
         api.offline(session.uid)
       }, 5000)

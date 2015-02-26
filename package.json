@@ -33,8 +33,12 @@
     "socket.io": "1.x",
     "steam-web": "^0.2.1"
   },
-  "devDependencies": {},
+  "devDependencies": {
+    "babel": "^4.5.5"
+  },
   "scripts": {
-    "start": "DEBUG=aocmulti:* node --harmony src/server"
+    "start": "DEBUG=aocmulti:* node --harmony src/server",
+    "babel": "node ./node_modules/babel/bin/babel/index.js --out-dir lib src",
+    "babel-start": "DEBUG=aocmulti:* ./node_modules/babel/bin/babel-node src/server"
   }
 }
