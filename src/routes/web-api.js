@@ -10,6 +10,13 @@ const { singleton, renameProp } = require('../fn')
 const pluck = require('propprop')
 const { map } = require('lambdajs')
 const assign = require('object-assign')
+const curry = require('curry')
+
+const splitInto = functions => {
+  return (...args) => functions.map(fn => fn(...args))
+}
+
+const await = curry((then, promise) => promise.then(then))
 
 const cleanModRecord = renameProp('userId', 'author')
 
@@ -43,11 +50,13 @@ export default function () {
   app.get('/mods', (req, res) => {
     store.findAll('mod')
       .then(map(cleanModRecord))
-      .thenSplit([
+      // create two objects, {mods} and {users}
+      .then(splitInto([
         singleton('mods')
-      , _.compose(map(singleton('users')), store.findMany('user'), map(pluck('author')))
-      ])
-      .then(objects => assign({}, ...objects))
+      , _.compose(await(singleton('users')), store.findMany('user'), map(pluck('author')))
+      ]))
+      // merge into {mods,users}
+      .spread(assign)
       .then(sendResponse(res))
       .catch(sendError(404, 'Could not find mods', res))
   })

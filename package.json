@@ -5,6 +5,7 @@
   "dependencies": {
     "awestruct": "^0.9.1",
     "bcryptjs": "1.x",
+    "bluebird": "^2.9.12",
     "body-parser": "1.x",
     "connect-redis": "2.x",
     "cookie-parser": "1.x",
@@ -29,7 +30,6 @@
     "passport-local": "1.x",
     "passport-openid": "^0.3.1",
     "prelude-ls": "^1.1.1",
-    "promise": "5.x",
     "propprop": "^0.3.0",
     "qs": "^2.2.3",
     "socket.io": "1.x",

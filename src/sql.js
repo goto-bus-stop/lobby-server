@@ -1,12 +1,17 @@
 'use strict'
 
-const mysql = require('mysql')
-    , SqlString = require('mysql/lib/protocol/SqlString')
-    , Promise = require('./promise')
+const SqlString = require('mysql/lib/protocol/SqlString')
+    , { using, promisifyAll } = require('bluebird')
     , _ = require('lodash')
 
 const config = require('../config')
     , debug = require('debug')('aocmulti:mysql')
+
+export const mysql = require('mysql')
+
+promisifyAll(mysql)
+promisifyAll(require('mysql/lib/Connection').prototype)
+promisifyAll(require('mysql/lib/Pool').prototype)
 
 // patch SqlString to do format arrays in objects with IN()
 SqlString.objectToValues = function (object, timeZone, sep) {
@@ -33,52 +38,19 @@ SqlString.objectToValues = function (object, timeZone, sep) {
 }
 
 // MySQL & helpers
-const pool = mysql.createPool({
+export const pool = mysql.createPool({
   host: config.db.host
 , user: config.db.user
 , password: config.db.password
 , database: config.db.database
 })
 
-var $queryId = 0
-function query(conn, sql) {
-  var args = [].slice.call(arguments, 1);
-
-  if (typeof conn === 'string') {
-    let _conn
-    args.unshift(conn)
-    return getConnection().then(function (conn) {
-      _conn = conn
-      return query.apply(null, [ conn ].concat(args))
-    }).finally(function () {
-      _conn && _conn.release()
-    })
-  }
-
-  var formattedSql = mysql.format.apply(mysql, args);
-  return new Promise(function (resolve, reject) {
-    const queryId = ++$queryId
-    args.push(function (err, rows) {
-      debug('finished query #' + queryId)
-      debug('  err', err)
-      if (err) reject(err)
-      else resolve(rows)
-    })
-    debug('starting query #' + queryId, formattedSql)
-    conn.query.apply(conn, args)
-  })
+export function getConnection() {
+  return pool.getConnectionAsync().disposer(
+    (conn, promise) => conn.release()
+  )
 }
-function getConnection() {
-  return new Promise(function (resolve, reject) {
-    pool.getConnection(function (err, conn) {
-      debug('got connection')
-      if (err) reject(err)
-      else resolve(conn)
-    })
-  })
+export function query(...args) {
+  return using(getConnection(),
+               conn => conn.queryAsync(...args)).get(0)
 }
-
-exports.query = query
-exports.getConnection = getConnection
-exports.pool = pool
-exports.mysql = mysql

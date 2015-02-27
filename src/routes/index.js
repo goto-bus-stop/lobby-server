@@ -4,8 +4,8 @@ const api = require('../api')
     , pp = require('passport')
     , fs = require('fs')
     , path = require('path')
-    , Promise = require('../promise')
-    , glob = Promise.denodeify(require('glob'))
+    , Promise = require('bluebird')
+    , glob = Promise.promisify(require('glob'))
     , store = require('../store')
     , express = require('express')
     , _ = require('lodash')
@@ -20,22 +20,23 @@ export default function () {
   function indexRoute(req, res) {
     if (req.isAuthenticated()) {
       let baseDir = path.join(__dirname, '../templates')
-      let templates = glob(`${baseDir}{/**/*,*}.handlebars`).then(
-        _.compose(
-          filter(_.compose(c => c !== '@', charAt(0))),
-          map(_.compose(replace(/\.handlebars$/, ''), substring(baseDir.length + 1)))
-        )
-      )
-      Promise.all([ store.findAll('ladder'), store.findAll('server'), templates ])
-        .thenCombine((ladders, servers, templates) => {
-          res.render('@layout', {
-            content: '{{outlet}}',
-            uid: req.session.uid,
-            ladders: ladders,
-            servers: servers,
-            templates: templates
-          })
+      let templates = glob(`${baseDir}{/**/*,*}.handlebars`)
+        .filter(file => file.substr(file.lastIndexOf('/')).charAt(1) !== '@')
+        .map(replace(/\.handlebars$/, ''))
+        .map(substring(baseDir.length + 1))
+      Promise.all([
+        store.findAll('ladder')
+      , store.findAll('server')
+      , templates
+      ]).spread((ladders, servers, templates) => {
+        res.render('@layout', {
+          content: '{{outlet}}',
+          uid: req.session.uid,
+          ladders: ladders,
+          servers: servers,
+          templates: templates
         })
+      })
     }
     else {
       store.findAll('server').then(_.compose(partial(res.render.bind(res), [ '@login' ]), singleton('servers')))

@@ -3,14 +3,14 @@
 const _ = require('lodash')
     , sql = require('./sql')
     , PubSub = require('./PubSub')
-    , Promise = require('./promise')
+    , Promise = require('bluebird')
     , debug = require('debug')('aocmulti:api')
     , store = require('./store')
     , uuid = require('node-uuid')
 
-const { without, isolate, constant, subset } = require('./fn')
+const { without, subset } = require('./fn')
 const pluck = require('propprop')
-const { forEach, map } = require('lambdajs')
+const { map } = require('lambdajs')
 const curry = require('curry')
 
 //+ writeDebugMessage :: Error -> IO
@@ -21,11 +21,11 @@ export function addRatings(user) {
   debug('addRatings', user)
   user.ratings = {}
   return store.queryMany('rating', { userId: user.id })
-    .then(isolate(debug))
-    .then(forEach(function (rating) {
+    .tap(debug)
+    .each(function (rating) {
       user.ratings[rating.ladderId] = cleanRatingRecord(rating)
-    }))
-    .then(constant(user))
+    })
+    .return(user)
     .catch(writeDebugMessage)
 }
 export function addRatingsA(users) {
@@ -39,17 +39,17 @@ export function addRatingsA(users) {
     user.ratings = {}
   })
   return store.queryMany('rating', { userId: userIds })
-    .then(forEach(function (rating) {
+    .each(function (rating) {
       usersMap[rating.userId].ratings[rating.ladderId] = cleanRatingRecord(rating)
-    }))
-    .then(constant(users))
+    })
+    .return(users)
     .catch(writeDebugMessage)
 }
 
 export function createGame(options) {
   // options { title, descr, maxPlayers, ladderId, hostId }
   return store.insert('gameRoom', subset([ 'title', 'descr', 'maxPlayers', 'ladderId', 'hostId' ], options))
-    .then(isolate(x => { PubSub.publish('gameRoom:created', x) }))
+    .tap(x => { PubSub.publish('gameRoom:created', x) })
     .catch(writeDebugMessage)
 }
 
@@ -57,17 +57,16 @@ const createSessionRecord = curry(function (roomId, playerId) {
   return { seskey: uuid.v4({}, Buffer(16)), roomId: roomId, userId: playerId }
 })
 export function startGame(id) {
-  let hostSession
   return Promise.all([
     store.update('gameRoom', { id: id }, { status: 'playing' }),
     store.queryMany('user', { roomId: id })
   ])
-  .then(isolate(debug.bind(null, 'players in ' + id)))
-  .then(pluck(1))
-  .then(function (players) {
+  .tap(debug.bind(null, `players in ${id}`))
+  .get(1)
+  .then(players => {
     const sessions = players.map(_.compose(createSessionRecord(id), pluck('id')))
     return store.insertMany('gameSession', sessions)
-      .then(constant(sessions))
+      .return(sessions)
   })
   .catch(writeDebugMessage)
 }
@@ -79,7 +78,7 @@ export function cleanupRooms() {
                      'FROM users ' +
                      'WHERE roomId IS NOT NULL' +
                    ')')
-    .then(function (u) {
+    .then(u => {
       const rids = map(pluck('id'), u)
       if (rids.length > 0) {
         debug('destroying', rids)
@@ -90,25 +89,24 @@ export function cleanupRooms() {
 }
 export function joinRoom(uid, rid) {
   return store.find('user', uid, [ 'roomId' ])
-    .then(function (user) {
+    .then(user => {
       if (user.roomId != null && user.roomId != rid) {
         PubSub.publish('gameRoom:playerLeft', user.roomId, uid)
       }
       else if (user.roomId != rid) {
-        return store.update('user', { id: uid }, { roomId: rid }).then(function () {
-          PubSub.publish('gameRoom:playerEntered', rid, uid)
-        })
+        return store.update('user', { id: uid }, { roomId: rid })
+          .tap(() => { PubSub.publish('gameRoom:playerEntered', rid, uid) })
       }
     })
-    .then(function () { setTimeout(cleanupRooms, 0) })
-    .then(constant(true))
+    .tap(() => { setTimeout(cleanupRooms, 0) })
+    .return(true)
     .catch(writeDebugMessage)
 }
 export function leaveRoom(uid) {
   let rid
   debug('user leaving room', 'userid:', uid)
   return store.find('user', uid, [ 'roomId' ])
-    .then(function (user) {
+    .tap(user => {
       if (user.roomId != null) {
         rid = user.roomId
         debug('user leaving room', 'roomid:', rid)
@@ -116,28 +114,24 @@ export function leaveRoom(uid) {
         return store.update('user', { id: uid }, { roomId: null })
       }
     })
-    .then(function () {
-      return store.find('gameRoom', rid, [ 'hostId' ])
-    })
-    .then(function (hostId) {
+    .then(() => store.find('gameRoom', rid, [ 'hostId' ]))
+    .tap(hostId => {
       if (hostId && hostId.hostId == uid) {
         return store.query('user', { roomId: rid }, [ 'id' ])
-          .then(function (host) {
+          .then(host => {
             return store.update('gameRoom', { id: rid }, { hostId: host.id })
-              .then(function () {
-                PubSub.publish('gameRoom:hostChanged', rid, host.id)
-              })
+              .tap(() => { PubSub.publish('gameRoom:hostChanged', rid, host.id) })
           })
       }
     })
-    .then(constant(true))
+    .return(true)
     .catch(writeDebugMessage)
     .finally(cleanupRooms)
 }
 
 export function online(uid) {
   return store.queryMany('webSession', { userId: uid })
-    .then(function (res) {
+    .then(res => {
       if (res.length === 0) {
         PubSub.publish('onlinePlayers:userJoined', uid)
         return store.insert('webSession', { userId: uid, serverId: 1 })
@@ -146,9 +140,9 @@ export function online(uid) {
 }
 export function offline(uid) {
   return store.query('webSession', { userId: uid }, [ 'id' ])
-    .then(pluck('id'))
+    .get('id')
     .then(store.destroy('webSession'))
-    .then(function () { PubSub.publish('onlinePlayers:userLeft', uid) })
+    .tap(() => { PubSub.publish('onlinePlayers:userLeft', uid) })
 }
 export function getOnlineUsers(sid) {
   return sql.query('SELECT u.* FROM users u, webSessions o WHERE u.id = o.userId AND o.serverId = ?', [ sid ])

@@ -4,6 +4,11 @@ const debug = require('debug')('aocmulti:server')
 
 debug('starting')
 
+require('bluebird').onPossiblyUnhandledRejection((e, promise) => {
+  console.error(promise)
+  throw e
+})
+
 const http = require('http')
     , path = require('path')
     , fs = require('fs')

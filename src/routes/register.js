@@ -1,13 +1,12 @@
 'use strict'
 
 const store = require('../store')
-    , Promise = require('../promise')
-    , readFile = Promise.denodeify(require('fs').readFile)
+    , Promise = require('bluebird')
+    , readFile = Promise.promisify(require('fs').readFile)
     , { join: joinPath } = require('path')
     , express = require('express')
     , _ = require('lodash')
 
-const { singleton } = require('../fn')
 const curry = require('curry')
 
 const insertUser = store.insert('user')
@@ -18,12 +17,13 @@ export default function () {
 
   let app = express.Router()
 
-  const countries = readCountries()
+  const countriesP = readCountries()
 
   const registerRoute = (req, res) => {
-    countries
-      .then(singleton('countries'))
-      .then(renderTemplate(res, '@register'))
+    countriesP.then(
+      countries => res.render('@register', { countries: countries }),
+      err => res.send(err)
+    )
   }
 
   app.get('/register', registerRoute)

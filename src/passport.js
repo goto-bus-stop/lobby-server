@@ -8,7 +8,7 @@ const api = require('./api')
     , SteamStrategy = require('./strategies/SteamStrategy')
     , debug = require('debug')('aocmulti:passport')
     , config = require('../config.json')
-    , Promise = require('./promise')
+    , Promise = require('bluebird')
     , store = require('./store')
     , _ = require('lodash')
     , userCache = require('lru-cache')({
@@ -16,19 +16,16 @@ const api = require('./api')
         maxAge: 1000 * 65
       })
 
-const { isolate, constant } = require('./fn')
 const pluck = require('propprop')
 
 const _authError = 'Username/Password combination not found'
-const comparePassword = Promise.denodeify(bcrypt.compare)
+const comparePassword = Promise.promisify(bcrypt.compare)
 const findUser = id => {
-  const key = 'u' + id
-  if (userCache.has(key)) {
-    return Promise.resolve(userCache.get(key))
-  }
-  return store.find('user', id).then(isolate(user => {
-    userCache.set(key, user)
-  }))
+  const key = `u${id}`
+  return userCache.has(key)
+    ? Promise.resolve(userCache.get(key))
+    : store.find('user', id)
+           .tap(user => { userCache.set(key, user) })
 }
 
 export default function (pp) {
@@ -42,7 +39,7 @@ export default function (pp) {
           throw new Error(_authError)
         }
         debug('login', user)
-        return comparePassword(password, user.password).then(constant(user))
+        return comparePassword(password, user.password).return(user)
       })
       .nodeify(done)
   }))
@@ -51,13 +48,9 @@ export default function (pp) {
     pp.use(new SteamStrategy(config.auth.steam, (openid, user, done) => {
       store.query('openid', { openid: openid })
         .then(_.compose(store.find('user'), pluck('userId')))
-        .catch(e => {
-          return store.insert('user', user)
-            .then(newRecord => {
-              return store.insert('openid', { userId: newRecord.id, openid: openid })
-                .then(constant(newRecord))
-            })
-        })
+        .catch(e => store.insert('user', user)
+          .tap(newRecord => store.insert('openid', { userId: newRecord.id, openid: openid }))
+        )
         .nodeify(done)
     }))
   }
