@@ -19,6 +19,7 @@ define(function (require, exports, module) {
   , Router: require('router')
 
   , ApplicationAdapter: require('adapters/ApplicationAdapter')
+  , UserAdapter: require('adapters/UserAdapter')
 
   , User: require('models/User')
   , Room: require('models/Room')

@@ -23,7 +23,7 @@ export default function () {
   })
   app.get('/online', function (req, res) {
     api.getOnlineUsers(1)
-      .then(map(cleanUserRecord))
+      .map(cleanUserRecord)
       .then(api.addRatingsA)
       .then(singleton('users'))
       .then(util.sendResponse(res))
@@ -49,20 +49,11 @@ export default function () {
   })
   app.get('/', function (req, res) {
     const query = req.query
-    let find
-    if (!_.isEmpty(query)) {
-      if (Object.keys(query).length === 1 && 'online' in query) {
-        find = api.getOnlineUsers(1)
-      }
-      else {
-        find = store.queryMany('user', query, userColumns)
-      }
-    }
-    else {
-      find = store.findAll('user', userColumns)
-    }
+    let find = !_.isEmpty(query)
+             ? store.queryMany('user', query, userColumns)
+             : store.findAll('user', userColumns)
     find
-      .then(map(cleanUserRecord))
+      .map(cleanUserRecord)
       .then(api.addRatingsA)
       .then(singleton('users'))
       .then(util.sendResponse(res))
