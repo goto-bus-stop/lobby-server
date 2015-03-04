@@ -11,7 +11,6 @@ const PubSub = require('./PubSub')
     , uuid = require('node-uuid')
     , _ = require('lodash')
 
-const { isolate } = require('./fn')
 const pluck = require('propprop')
 
 const Errors = {
@@ -186,7 +185,7 @@ export default function (app, io) {
         api.startGame(room)
           .then(() =>
             store.query('gameSession', { userId: session.uid })
-              .then(isolate(debug.bind(null, 'gameSession')))
+              .tap(debug.bind(null, 'gameSession'))
           )
           .then(_.compose(uuid.unparse, pluck('seskey')))
           .nodeify(cb)

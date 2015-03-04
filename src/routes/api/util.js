@@ -6,25 +6,22 @@ const store = require('../../store')
 
 const curry = require('curry')
 const pluck = require('propprop')
-const { isolate, singleton } = require('../../fn')
+const { singleton } = require('../../fn')
 const { map, forEach } = require('lambdajs')
 const assign = require('object-assign')
 
 export function sideload(type, from, prop) {
   return function (data) {
-    var loadIds = data[from].reduce(function (a, item) {
-      return a.concat(item[prop])
-    }, [])
-    return store.findMany(type, loadIds).then(function (sideloaded) {
-      data[type + 's'] = data[type + 's'] ? data[type + 's'].concat(sideloaded) : sideloaded
-      return data
-    })
+    var loadIds = data[from].reduce((a, item) => a.concat(item[prop]), [])
+    return store.findMany(type, loadIds)
+      .tap(sideloaded => { data[`${type}s`] = (data[`${type}s`] || []).concat(sideloaded) })
+      .return(data)
   }
 }
 
 export function sideloadPlayers(data) {
   let rooms = data.rooms || [ data.room ]
-  rooms.forEach(function (room) {
+  rooms.forEach(room => {
     if (!room.players) {
       room.players = []
     }
@@ -33,22 +30,21 @@ export function sideloadPlayers(data) {
   let roomsById = _.indexBy(rooms, 'id')
   debug('byId', roomsById)
   return store.queryMany('user', { roomId: map(pluck('id'), rooms) })
-    .then(isolate(debug.bind(null, 'sideloaded')))
-    .then(isolate(forEach(player => { roomsById[player.roomId].players.push(player.id) })))
+    .tap(debug.bind(null, 'sideloaded'))
+    .forEach(player => { roomsById[player.roomId].players.push(player.id) })
     .then(users => assign(data, { users }))
     .catch(debug.bind(null, 'sideloadPlayers'))
 }
 
 export const sideloadByMany = curry(function (type, sideProp, dataProp, data) {
-
   return store.queryMany(type, singleton(sideProp, map(pluck('id'), models)))
-    .then(function (sideloaded) {
-      sideloaded.forEach(function (side) {
-        modelsById[side[sideProp]]
+    .tap(sideloaded => {
+      sideloaded.forEach(side => {
+        // modelsById[side[sideProp]]
       })
-      data[type + 's'] = sideloaded
-      return data
+      data[`${type}s`] = sideloaded
     })
+    .return(data)
     .catch(debug)
 })
 

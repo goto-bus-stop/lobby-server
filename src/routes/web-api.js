@@ -6,15 +6,11 @@ const api = require('../api')
     , express = require('express')
     , _ = require('lodash')
 
-const { singleton, renameProp } = require('../fn')
+const { singleton, renameProp, splitInto } = require('../fn')
 const pluck = require('propprop')
 const { map } = require('lambdajs')
 const assign = require('object-assign')
 const curry = require('curry')
-
-const splitInto = functions => {
-  return (...args) => functions.map(fn => fn(...args))
-}
 
 const await = curry((then, promise) => promise.then(then))
 
@@ -49,7 +45,7 @@ export default function () {
   })
   app.get('/mods', (req, res) => {
     store.findAll('mod')
-      .then(map(cleanModRecord))
+      .map(cleanModRecord)
       // create two objects, {mods} and {users}
       .then(splitInto([
         singleton('mods')

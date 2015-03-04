@@ -22,13 +22,13 @@ export default function () {
 
   app.get('/game/:seskey', function (req, res) {
     var format = req.query.format || 'json'
-      , seskey = new Buffer( uuid.parse(req.params.seskey) )
+      , seskey = Buffer( uuid.parse(req.params.seskey) )
     sql.query(
       'SELECT u.username, r.ip, r.maxPlayers, (r.hostId = u.id) AS isHost, r.sessGuid AS sguid, r.guid ' +
       'FROM sessions s, users u, gameRooms r ' +
       'WHERE s.seskey = ? AND u.id = s.userId AND r.id = s.roomId',
       [ seskey ]
-    ).then(pluck(0)).then(function (session) {
+    ).get(0).then(session => {
       if (format === 'json') {
         res.json(session)
       }
@@ -43,9 +43,7 @@ export default function () {
         ].join(USEP))
       }
     })
-    .catch(function (e) {
-      debug(e.stack)
-    })
+    .catch(e => { debug(e.stack) })
   })
 
   app.post('/game/:seskey/ready', function (req, res) {
@@ -53,16 +51,12 @@ export default function () {
     debug('game/:seskey/ready/', req.body, req.param('sguid'))
     if (req.body.sguid && req.body.guid) {
       store.query('gameSession', { seskey: seskey }, [ 'roomId' ])
-        .then(function (x) {
+        .then(x => {
           return store.update('gameRoom', { id: x.roomId }, { ip: req.ip, sessGuid: req.body.sguid, guid: req.body.guid })
-            .then(isolate(function () {
-              PubSub.publish('gameRoom:starting', x.roomId)
-            }))
+            .tap(() => { PubSub.publish('gameRoom:starting', x.roomId) })
         })
         .then(next)
-        .catch(function (e) {
-          debug(e.stack)
-        })
+        .catch(e => { debug(e.stack) })
     }
     else {
       next()
@@ -177,7 +171,7 @@ export default function () {
     u7: array(7, uint8)
   })
   app.post('/game/:seskey/end', function (req, res) {
-    var data = new Buffer(2140)
+    var data = Buffer(2140)
       , offset = 0
     req.on('data', function (c) {
       c.copy(data, offset)
@@ -191,7 +185,7 @@ export default function () {
   app.post('/game/:seskey/recording', function (req, res) {
     req
       .pipe(zlib.createGzip())
-      .pipe(fs.createWriteStream(path.join('recordings', req.params.seskey + '.zip')))
+      .pipe(fs.createWriteStream(path.join('recordings', `${req.params.seskey}.zip`)))
     req.on('end', res.end.bind(res, 'ok'))
   })
 

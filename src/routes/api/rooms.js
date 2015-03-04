@@ -11,7 +11,7 @@ const express = require('express')
 
 const curry = require('curry')
 const pluck = require('propprop')
-const { renameProp, singleton, toInt } = require('../../fn')
+const { renameProp, singleton, toInt, splitInto } = require('../../fn')
 const { map, filter } = require('lambdajs')
 
 const createSessionRecord = curry(function (roomId, playerId) {
@@ -50,14 +50,14 @@ export default function () {
       // get players
       .then(_.compose(store.queryMany('user'), singleton('roomId')))
       // create player sessions
-      .then(map(_.compose(createSessionRecord(id), pluck('id'))))
+      .map(_.compose(createSessionRecord(id), pluck('id')))
       // store player sessions
-      .thenSplit([
+      .then(splitInto([
         store.insertMany('gameSession'),
         _.compose(pluck(0), filter(session => session.userId === myId))
-      ])
-      .thenCombine((ins, mySession) => uuid.unparse(mySession.seskey))
-      .then(isolate(() => { PubSub.publish('game:start', id) }))
+      ]))
+      .spread((ins, mySession) => uuid.unparse(mySession.seskey))
+      .tap(() => { PubSub.publish('game:start', id) })
       .then(util.sendResponse(res))
       .catch(util.sendError(500, 'Could not start game', res))
   })
@@ -79,19 +79,15 @@ export default function () {
   app.post('/:room_id/join', function (req, res) {
     var roomId = toInt(req.params.room_id)
     store.find('user', req.session.uid)
-      .then(pluck('roomId'))
-      .then(function (rid) {
+      .get('roomId')
+      .tap(rid => {
         if (rid) {
           PubSub.publish('gameRoom:playerLeft', rid, req.session.uid)
         }
       })
-      .then(function () {
-        return store.update('user', { id: req.session.uid }, { roomId: roomId })
-      })
-      .then(function () {
-        PubSub.publish('gameRoom:playerEntered', roomId, req.session.uid)
-        return true
-      })
+      .then(() => store.update('user', { id: req.session.uid }, { roomId: roomId }))
+      .tap(() => { PubSub.publish('gameRoom:playerEntered', roomId, req.session.uid) })
+      .return(true)
       .then(util.sendResponse(res))
       .catch(util.sendError(500, 'Could not join room', res))
 

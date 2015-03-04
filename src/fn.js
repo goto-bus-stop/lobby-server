@@ -60,11 +60,6 @@ export const partial = curry(function (fn, args) {
 })
 //+ singleton :: String -> _ -> Object
 export const singleton = curry(function (k, v) { return { [k]: v } })
-//+ isolate :: (a -> _) -> b -> (a -> b)
-export const isolate = curry(function (fn, x) {
-  fn(x)
-  return x
-})
 //+ append :: [a] -> [a] -> [a]
 export const append = curry(function (suffix, arr) {
   return arr.concat(suffix)
@@ -76,3 +71,7 @@ export const associate = curry(function (keys, values) {
     return obj
   }, {}, keys)
 })
+//+ splitInto :: [a -> b] -> (a -> [b])
+export const splitInto = functions => {
+  return (...args) => functions.map(fn => fn(...args))
+}

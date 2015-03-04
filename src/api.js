@@ -22,7 +22,7 @@ export function addRatings(user) {
   user.ratings = {}
   return store.queryMany('rating', { userId: user.id })
     .tap(debug)
-    .each(function (rating) {
+    .each(rating => {
       user.ratings[rating.ladderId] = cleanRatingRecord(rating)
     })
     .return(user)
@@ -33,13 +33,13 @@ export function addRatingsA(users) {
   debug('addRatingsA', users.length)
   let usersMap = {}
     , userIds = []
-  users.forEach(function (user) {
+  users.forEach(user => {
     usersMap[user.id] = user
     userIds.push(user.id)
     user.ratings = {}
   })
   return store.queryMany('rating', { userId: userIds })
-    .each(function (rating) {
+    .each(rating => {
       usersMap[rating.userId].ratings[rating.ladderId] = cleanRatingRecord(rating)
     })
     .return(users)
